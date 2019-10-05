@@ -36,3 +36,5 @@ What does this need to do?
     1.  Should it stay activated
     2.  Should it turn on or off at specific time
     3.  Should it be heating or cooling
+
+#### More Notes
