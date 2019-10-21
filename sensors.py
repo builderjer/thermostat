@@ -7,12 +7,14 @@ class TempSensor:
 	"""
 	A class to create a temperature sensor for use with an Arduino and the firmata library
 	"""
-	def __init__(self, moduleType, controlPin, location=None, outputFormat="F"):
+	def __init__(self, moduleType, controlPin, location, outputFormat="F"):
 		"""
 		moduleType => type of sensor (LM35, etc...)
 			It is required because each sensor uses a different forumla to determine the temp
 		controlPin => The Arduino pin the sensor is connected to.  Must be an intiger
-		location => (OPTIONAL) The place it is locatated (KITCHEN, LIVINGROOM)
+		location => The place it is locatated (KITCHEN, LIVINGROOM)
+			Required for id purposes.
+		outputFormat => Show the ouput as Celsius "C" or Fahrenheit "F"
 		
 		"""
 		self.moduleType = moduleType.upper()

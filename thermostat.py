@@ -1,3 +1,12 @@
+"""
+class Thermostat
+
+Controls all of the temperature settings and retrieves the temps of the rooms associated.
+"""
+
+__author__ = "builderjer"
+__version__ = "0.1.0"
+
 class Thermostat:
 	def __init__(self, outputFormat):
 		"""
