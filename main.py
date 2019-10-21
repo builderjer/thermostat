@@ -32,10 +32,6 @@ if args.debug:
 # Start up the Arduino board
 board = PyMata3()
 
-# Make some functions
-def getTemp(data):
-	print("reading: {} on pin {}".format(data[1], data[0]))
-
 # Setup the thermostat
 thermostat = thermostat.Thermostat("F")
 
@@ -60,7 +56,7 @@ for sensor in thermostat.tempSensors:
 	reading = []
 	while i < 10:
 		reading.append(board.analog_read(sensor.controlPin))
-		board.sleep(.05)
+		board.sleep(.005)
 		if args.debug:
 			print(reading[i])
 		i = i + 1

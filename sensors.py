@@ -10,6 +10,7 @@ class TempSensor:
 	def __init__(self, moduleType, controlPin, location=None, outputFormat="F"):
 		"""
 		moduleType => type of sensor (LM35, etc...)
+			It is required because each sensor uses a different forumla to determine the temp
 		controlPin => The Arduino pin the sensor is connected to.  Must be an intiger
 		location => (OPTIONAL) The place it is locatated (KITCHEN, LIVINGROOM)
 		
