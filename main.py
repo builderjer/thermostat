@@ -6,6 +6,9 @@ pymata_aio.
 You can find this on Github at https://github.com/MrYsLab/pymata-aio
 """
 
+__author__ = "builderjer"
+__version__ = "0.1.1"
+
 # Do some imports
 
 # Built in libraries
@@ -33,20 +36,17 @@ if args.debug:
 board = PyMata3()
 
 # Setup the thermostat
-thermostat = thermostat.Thermostat("F")
+thermostat = thermostat.Thermostat()
 
 # Add the sensors to the thermostat
 thermostat.addSensor(TempSensor("lm35", 0, location="kitchen"))
 thermostat.addSensor(TempSensor("lm35", 1, location="livingroom"))
 
-if args.debug:
-	for sensor in thermostat.tempSensors:
-		print("sensor {} of type {} on pin {} added".format(sensor.location, sensor.moduleType, sensor.controlPin))
-
 # Add the sensors to the board
 for sensor in thermostat.tempSensors:
 	board.set_pin_mode(sensor.controlPin, Constants.ANALOG)
-	#
+	if args.debug:
+		print("sensor {} of type {} on pin {} added".format(sensor.location, sensor.moduleType, sensor.controlPin))
 
 # Get the reading from the sensors
 # We want to run the reading a few times to get a good average
@@ -54,7 +54,7 @@ temps = []
 for sensor in thermostat.tempSensors:
 	i = 0
 	reading = []
-	while i < 10:
+	while i < 100:
 		reading.append(board.analog_read(sensor.controlPin))
 		board.sleep(.005)
 		if args.debug:
