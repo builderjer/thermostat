@@ -1,0 +1,6 @@
+{
+	"USER_DIR"					: ".config/thermostat",
+	"USER_CONFIG"			: "thermostat.json",
+	"LOG_FILE"					: "thermostat.log",
+	"OUTPUT_FORMAT"		: "F"
+}
