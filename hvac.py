@@ -9,8 +9,8 @@ class HVAC:
 	def __init__(self, board=None):
 		self.LOGGER = logging.getLogger("__main__.hvac.HVAC")
 
-		self._heat = False
-		self._cool = False
+		self._heat = 0
+		self._cool = 0
 		self._heatControl = ()
 		self._coolControl = ()
 		
@@ -20,7 +20,7 @@ class HVAC:
 			sys.exit()
 		else:
 			self.board = board
-	
+		
 	@property
 	def heat(self):
 		return self._heat
@@ -59,7 +59,8 @@ class HVAC:
 			self.heat = self._heatControl[2]
 		except Exception as e:
 			self.LOGGER.error("Error turning on heat -- {}".format(e))
-		print("turned heat on")
+		self.LOGGER.info("Turned heat on")
+		#print("turned heat on")
 		
 	def turnHeatOff(self):
 		try:
@@ -71,7 +72,8 @@ class HVAC:
 			self.heat = self._heatControl[2]
 		except Exception as e:
 			self.LOGGER.error("Error turning on heat -- {}".format(e))
-		print("turned heat off")
+		self.LOGGER.info("Turned heat off")
+		#print("turned heat off")
 		
 	def turnCoolOn(self):
 		self.board.digital_write(self._coolControl[0], 1)

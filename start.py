@@ -138,7 +138,7 @@ HVAC = hvac(board=board)
 # Set the pins for heating and cooling control
 HVAC.setPins("heat", 2, 5, 4)
 HVAC.setPins("cool", 3, 6, 7)
-		
+
 #mainTemp = (THERMOSTAT.getTemp("house"))
 		
 #LOGGER.info("Temp in {} is {}\xB0".format("house", mainTemp))
@@ -149,10 +149,10 @@ HVAC.setPins("cool", 3, 6, 7)
 while True:
 	houseTemp = THERMOSTAT.getTemp("house")
 	if round(houseTemp) > IDEALTEMP:
-		if HVAC.heat == True:
+		if HVAC.heat == 1:
 			HVAC.turnHeatOff()
 	if round(houseTemp) < IDEALTEMP:
-		if HVAC.heat == False:
+		if HVAC.heat == 0:
 			HVAC.turnHeatOn()
 	print("heat is {}".format(HVAC.heat))
 	print("house temp is {}".format(houseTemp))

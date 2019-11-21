@@ -215,7 +215,7 @@ class Thermostat:
 		# Check the single areas first
 		if area in self.tempSensors:
 			getAverage(self.tempSensors[area])
-			self.LOGGER.info("Temp in area {} is {}C".format(area, self.tempSensors[area].tempC))
+			self.LOGGER.debug("Temp in area {} is {}C".format(area, self.tempSensors[area].tempC))
 			temp = self.tempSensors[area].tempC
 			
 		# If not there, check if a group is asked for
