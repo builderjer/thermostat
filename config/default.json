@@ -1,0 +1,46 @@
+{
+	"USER_DIR"						: ".config/thermostat",
+	"USER_CONFIG"				: "thermostat.json",
+	"LOG_FILE"						: "thermostat.log",
+	"OUTPUT_FORMAT"			: "F",
+	"DEFAULT_STATE"			: "OFF",
+	"DEFAULT_MODE"			: "AUTO",
+	"TEMP_SETTINGS"			: {
+		"WINTER"						: {
+			"DEFAULT_TEMP"		: 66,
+			"TIME_SETTINGS"		: {
+				"TIME_ONE"			: [600, 730, 2],
+				"TIME_TWO"			: [730, 1830, 0],
+				"TIME_THREE"		: [1830, 2030, 2],
+				"TIME_FOUR"		: [2030, 600, 0]
+			},
+			"NAMED_SETTINGS"	: {
+				"HOME"				: [0, 0, 1],
+				"AWAY"				: [0, 0, -3]
+			}
+		},
+		"SUMMER"					: {
+			"DEFAULT_TEMP"		: 76,
+			"TIME_SETTINGS"		: {
+				"TIME_ONE"			: [600, 730, -2],
+				"TIME_TWO"			: [730, 1830, 0],
+				"TIME_THREE"		: [1830, 2030, -2],
+				"TIME_FOUR"		: [2030, 600, 0]
+				},
+			"NAMED_SETTINGS"	: {
+				"HOME"				: [0, 0, -1],
+				"AWAY"				: [0, 0, 3]
+				}
+			}
+		},
+	"HVAC"								: {
+		"CONTROL_PINS"			: {
+			"HEAT_OFF"				: 2,
+			"HEAT_ON"				: 3,
+			"COOL_OFF"				: 4,
+			"COOL_ON"				: 5,
+			"HEAT_SENSE"			: 6,
+			"COOL_SENSE"			:7
+			}
+		}
+	}
