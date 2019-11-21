@@ -25,6 +25,12 @@ import json
 from pathlib import Path
 import argparse
 import sys
+import time
+
+# Temperary settings to just make sure this works
+MAXTEMP= 69
+MINTEMP = 67
+IDEALTEMP = 68
 
 # Set up the parser
 parser = argparse.ArgumentParser()
@@ -64,7 +70,7 @@ else:
 	FILE_LOGGER.setLevel(logging.INFO)
 	LOGGER.info("Logging set to INFO")
 if args.verbose:
-	CONSOLE_LOGGER.setLevel(logging.WARNING)
+	CONSOLE_LOGGER.setLevel(logging.INFO)
 	LOGGER.addHandler(CONSOLE_LOGGER)
 
 # Import PyMata libraries
@@ -86,6 +92,7 @@ except ModuleNotFoundError:
 # Import local libraries
 import thermostat
 from sensors import TempSensor
+from hvac import HVAC as hvac
 
 # Override with user settings
 try:
@@ -96,13 +103,16 @@ try:
 except FileNotFoundError:
 	LOGGER.warning("No user config file.  Using default")
 
+t_time = time.ctime(time.time())
+
 # Start up the Arduino board
 # Specify a com_port so that more than one board can be used
 board = PyMata3(com_port="/dev/ttyACM0")
 
 # Setup the thermostat
+
 THERMOSTAT = thermostat.Thermostat(board=board)
-	
+
 # Add the temp sensors to the thermostat
 THERMOSTAT.addSensor(TempSensor("lm35", 3), "hallway")
 THERMOSTAT.addSensor(TempSensor("lm35", 4), "masterbed")
@@ -120,29 +130,35 @@ THERMOSTAT.createGroup("house")
 THERMOSTAT.addSensorToGroup("house", THERMOSTAT.tempSensors["HALLWAY"])
 THERMOSTAT.addSensorToGroup("house", THERMOSTAT.tempSensors["MASTERBED"])
 THERMOSTAT.addSensorToGroup("house", THERMOSTAT.tempSensors["LIVINGROOM"])
-	
-def publishTemp():
-	baseTopic = "ziggy/house/climate/temp/"
-	for location, sensor in THERMOSTAT.tempSensors.items():
-		# Get the value from the sensor
-		temp = str(round(THERMOSTAT.getTemp(location)))
-		topic = baseTopic + location.lower()
-		mqtt_pub.single(topic, temp, hostname="ziggyhome.mooo.com", port=8884, auth={"username": "ziggy", "password": "ziggy"}, qos=1, retain=True)
-	LOGGER.debug("Published main temp of {}".format(mainTemp))
-	print("Published main temp of {}".format(mainTemp))
-		
-mainTemp = (THERMOSTAT.getTemp("house"))
-		
-LOGGER.info("Temp in {} is {}\xB0".format("house", mainTemp))
-print("mainTemp:  " + str(mainTemp))
-for sensor in THERMOSTAT.tempSensors:
-  print(sensor + ":  " + str(THERMOSTAT.getTemp(sensor)))
 
-if MQTT_ENABLED:
-	try:
-		publishTemp()
-	except Exception as e:
-		print(e)
-		LOGGER.error("Something went wrong with publish.  {}".format(e))
+# Set up the HVAC
+
+HVAC = hvac(board=board)
+
+# Set the pins for heating and cooling control
+HVAC.setPins("heat", 2, 5, 4)
+HVAC.setPins("cool", 3, 6, 7)
 		
+#mainTemp = (THERMOSTAT.getTemp("house"))
+		
+#LOGGER.info("Temp in {} is {}\xB0".format("house", mainTemp))
+#for sensor in THERMOSTAT.tempSensors:
+  #print(sensor + ":  " + str(THERMOSTAT.getTemp(sensor)))
+
+# Main loop
+while True:
+	houseTemp = THERMOSTAT.getTemp("house")
+	if round(houseTemp) > IDEALTEMP:
+		if HVAC.heat == True:
+			HVAC.turnHeatOff()
+	if round(houseTemp) < IDEALTEMP:
+		if HVAC.heat == False:
+			HVAC.turnHeatOn()
+	print("heat is {}".format(HVAC.heat))
+	print(houseTemp)
+	print("hallway: {}".format(THERMOSTAT.getTemp("hallway")))
+	print("masterbed: {}".format(THERMOSTAT.getTemp("masterbed")))
+	print("livingroom: {}".format(THERMOSTAT.getTemp("livingroom")))
+	time.sleep(30)
+	
 board.shutdown()
