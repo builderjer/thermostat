@@ -5,9 +5,18 @@
 	"OUTPUT_FORMAT"			: "F",
 	"DEFAULT_STATE"			: "OFF",
 	"DEFAULT_MODE"			: "AUTO",
+	"SENSORS"						: {
+		"HALLWAY"					: ["LM35", 3],
+		"MASTERBED"				: ["LM35", 4],
+		"LIVINGROOM"				: ["LM35", 5]
+		},
+	"SENSOR_GROUPS"			: {
+		"HOUSE"						: ["HALLWAY", "MASTERBED", "LIVINGROOM"]
+			},
 	"TEMP_SETTINGS"			: {
+		"DEFAULT_TEMP"			: 68,
 		"WINTER"						: {
-			"DEFAULT_TEMP"		: 66,
+			"DEFAULT_TEMP"		: 68,
 			"TIME_SETTINGS"		: {
 				"TIME_ONE"			: [600, 730, 2],
 				"TIME_TWO"			: [730, 1830, 0],
@@ -28,18 +37,18 @@
 				"TIME_FOUR"		: [2030, 600, 0]
 				},
 			"NAMED_SETTINGS"	: {
-				"HOME"				: [0, 0, -1],
+				"HOME"				: [0, 0, -2],
 				"AWAY"				: [0, 0, 3]
 				}
 			}
 		},
 	"HVAC"								: {
 		"CONTROL_PINS"			: {
-			"HEAT_OFF"				: 2,
-			"HEAT_ON"				: 3,
-			"COOL_OFF"				: 4,
-			"COOL_ON"				: 5,
-			"HEAT_SENSE"			: 6,
+			"HEAT_OFF"				: 5,
+			"HEAT_ON"				: 2,
+			"COOL_OFF"				: 6,
+			"COOL_ON"				: 3,
+			"HEAT_SENSE"			: 4,
 			"COOL_SENSE"			:7
 			}
 		}

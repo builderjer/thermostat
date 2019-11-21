@@ -26,11 +26,20 @@ from pathlib import Path
 import argparse
 import sys
 import time
+import signal
 
 # Temperary settings to just make sure this works
 MAXTEMP= 69
 MINTEMP = 67
 IDEALTEMP = 68
+
+# Set up the signal handler for shutdown
+def shutdown(sig, frame):
+	if board:
+		board.shutdown()
+	sys.exit()
+
+signal.signal(signal.SIGTERM, shutdown)
 
 # Set up the parser
 parser = argparse.ArgumentParser()
@@ -101,7 +110,10 @@ try:
 	with open(Path(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["USER_CONFIG"]))) as usersettings:
 		settings = json.load(usersettings)
 		for setting, value in settings.items():
-			SETTINGS[setting] = value
+			if setting in SETTINGS:
+				SETTINGS[setting] = value
+			else:
+				LOGGER.warning("{} is not a valid setting.  Please refer to the default settings for valid settings".format(setting))
 except FileNotFoundError:
 	LOGGER.warning("No user config file.  Using default")
 
@@ -116,51 +128,54 @@ board = PyMata3(com_port="/dev/ttyACM0")
 THERMOSTAT = thermostat.Thermostat(board=board)
 
 # Add the temp sensors to the thermostat
-THERMOSTAT.addSensor(TempSensor("lm35", 3), "hallway")
-THERMOSTAT.addSensor(TempSensor("lm35", 4), "masterbed")
-THERMOSTAT.addSensor(TempSensor("lm35", 5), "livingroom")
-
-# Add the sensors to the board
-for sensor in THERMOSTAT.tempSensors:
-	board.set_pin_mode(THERMOSTAT.tempSensors[sensor].controlPin, Constants.ANALOG)
-	LOGGER.debug("Sensor {} of type {} added on pin {}".format(sensor, THERMOSTAT.tempSensors[sensor].moduleType, THERMOSTAT.tempSensors[sensor].controlPin))
+if SETTINGS["SENSORS"]:
+	for area, sensor in SETTINGS["SENSORS"].items():
+		THERMOSTAT.addSensor(TempSensor(sensor[0], sensor[1]), area)
+		# Add it to the board
+		board.set_pin_mode(THERMOSTAT.tempSensors[area].controlPin, Constants.ANALOG)
+		print(THERMOSTAT.tempSensors)
+		#LOGGER.debug("Sensor {} of type {} added on pin {}".format(sensor, THERMOSTAT.tempSensors[sensor].moduleType, THERMOSTAT.tempSensors[sensor].controlPin))
+else:
+	LOGGER.error("No sensors in config file")
+	sys.exit()
 
 # Create a group to get an average temp of the house
-THERMOSTAT.createGroup("house")
-
-# Add the thermostats to the group
-THERMOSTAT.addSensorToGroup("house", THERMOSTAT.tempSensors["HALLWAY"])
-THERMOSTAT.addSensorToGroup("house", THERMOSTAT.tempSensors["MASTERBED"])
-THERMOSTAT.addSensorToGroup("house", THERMOSTAT.tempSensors["LIVINGROOM"])
+if SETTINGS["SENSOR_GROUPS"]:
+	for group, sensors in SETTINGS["SENSOR_GROUPS"].items():
+		THERMOSTAT.createGroup(group)
+		for sensor in sensors:
+			if sensor in THERMOSTAT.tempSensors:
+				THERMOSTAT.addSensorToGroup(group, THERMOSTAT.tempSensors[sensor])
 
 # Set up the HVAC
 
 HVAC = hvac(board=board)
 
 # Set the pins for heating and cooling control
-HVAC.setPins("heat", 2, 5, 4)
-HVAC.setPins("cool", 3, 6, 7)
-
-#mainTemp = (THERMOSTAT.getTemp("house"))
-		
-#LOGGER.info("Temp in {} is {}\xB0".format("house", mainTemp))
-#for sensor in THERMOSTAT.tempSensors:
-  #print(sensor + ":  " + str(THERMOSTAT.getTemp(sensor)))
+HVAC.setPins("heat", SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_ON"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_SENSE"])
+HVAC.setPins("cool", SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_ON"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_SENSE"])
 
 # Main loop
 while True:
 	houseTemp = THERMOSTAT.getTemp("house")
-	if round(houseTemp) > IDEALTEMP:
+	if round(houseTemp) > SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
+	#if round(houseTemp) > IDEALTEMP:
 		if HVAC.heat == 1:
+			LOGGER.debug(HVAC.heat)
 			HVAC.turnHeatOff()
-	if round(houseTemp) < IDEALTEMP:
+	if round(houseTemp) < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
+	#if round(houseTemp) < IDEALTEMP:
 		if HVAC.heat == 0:
+			LOGGER.debug(HVAC.heat)
 			HVAC.turnHeatOn()
-	print("heat is {}".format(HVAC.heat))
-	print("house temp is {}".format(houseTemp))
-	print("hallway: {}".format(THERMOSTAT.getTemp("hallway")))
-	print("masterbed: {}".format(THERMOSTAT.getTemp("masterbed")))
-	print("livingroom: {}".format(THERMOSTAT.getTemp("livingroom")))
+			
+	LOGGER.debug(HVAC.heat)
+	if args.verbose:
+		print("heat is {}".format(HVAC.heat))
+		print("house temp is {}".format(houseTemp))
+		print("hallway: {}".format(THERMOSTAT.getTemp("hallway")))
+		print("masterbed: {}".format(THERMOSTAT.getTemp("masterbed")))
+		print("livingroom: {}".format(THERMOSTAT.getTemp("livingroom")))
 	time.sleep(30)
 	
 board.shutdown()
