@@ -34,6 +34,11 @@ MINTEMP = 67
 IDEALTEMP = 68
 
 # Set up the signal handler for shutdown
+def shutdown(sig, frame):
+	if board:
+		board.shutdown()
+	sys.exit()
+
 signal.signal(signal.SIGTERM, shutdown)
 
 # Set up the parser
@@ -148,11 +153,6 @@ HVAC = hvac(board=board)
 HVAC.setPins("heat", SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_ON"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_SENSE"])
 HVAC.setPins("cool", SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_ON"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_SENSE"])
 
-def shutdown(sig, frame):
-	if board:
-		board.shutdown()
-	sys.exit()
-	
 # Main loop
 while True:
 	houseTemp = THERMOSTAT.getTemp("house")
