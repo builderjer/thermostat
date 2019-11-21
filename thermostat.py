@@ -178,7 +178,8 @@ class Thermostat:
 		if group in self.groups:
 			if sensor not in self.groups[group]:
 				self.groups[group].append(sensor)
-				print(self.groups)
+				self.LOGGER.debug("Added sensor {} to group {}".format(sensor, group))
+				#print(self.groups)
 				return True
 			self.LOGGER.warning("{} sensor is already a member of the group {}".format(sensor, group))
 			return False

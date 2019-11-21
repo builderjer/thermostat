@@ -126,7 +126,8 @@ if SETTINGS["SENSORS"]:
 		THERMOSTAT.addSensor(TempSensor(sensor[0], sensor[1]), area)
 		# Add it to the board
 		board.set_pin_mode(THERMOSTAT.tempSensors[area].controlPin, Constants.ANALOG)
-		LOGGER.debug("Sensor {} of type {} added on pin {}".format(sensor, THERMOSTAT.tempSensors[sensor].moduleType, THERMOSTAT.tempSensors[sensor].controlPin))
+		print(THERMOSTAT.tempSensors)
+		#LOGGER.debug("Sensor {} of type {} added on pin {}".format(sensor, THERMOSTAT.tempSensors[sensor].moduleType, THERMOSTAT.tempSensors[sensor].controlPin))
 else:
 	LOGGER.error("No sensors in config file")
 	sys.exit()
