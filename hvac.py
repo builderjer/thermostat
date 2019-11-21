@@ -53,6 +53,7 @@ class HVAC:
 		try:
 			self.board.digital_write(self._heatControl[0], 1)
 			self.board.sleep(.1)
+			
 			self.board.digital_write(self._heatControl[0], 0)
 			self.board.sleep(.5)
 			self.board.digital_read(self._heatControl[2])

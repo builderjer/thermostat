@@ -166,6 +166,7 @@ while True:
 		if HVAC.heat == 0:
 			LOGGER.debug(HVAC.heat)
 			HVAC.turnHeatOn()
+			
 	LOGGER.debug(HVAC.heat)
 	if args.verbose:
 		print("heat is {}".format(HVAC.heat))

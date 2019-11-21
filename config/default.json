@@ -37,7 +37,7 @@
 				"TIME_FOUR"		: [2030, 600, 0]
 				},
 			"NAMED_SETTINGS"	: {
-				"HOME"				: [0, 0, -1],
+				"HOME"				: [0, 0, -2],
 				"AWAY"				: [0, 0, 3]
 				}
 			}
