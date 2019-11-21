@@ -22,6 +22,7 @@ class TempSensor:
 		<int> controlPin => The pin on the microcontroller the sensor is connected to.
 		"""
 		self.LOGGER = logging.getLogger("__main__.  sensors.TempSensor")
+		self.LOGGER.debug("Created TempSensor with moduleType {} and controlPin {}".format(moduleType, controlPin))
 		
 		self.moduleType = moduleType.upper()
 		
@@ -31,8 +32,6 @@ class TempSensor:
 			self._controlPin = None
 		
 		self._tempC = None
-		
-		self.LOGGER.debug("Created TempSensor with moduleType {} and controlPin {}".format(moduleType, controlPin))
 		
 	@property
 	def controlPin(self):
@@ -48,9 +47,15 @@ class TempSensor:
 		return self._tempC
 	
 	@tempC.setter
-	def tempC(self, rawValue):
-		if self.moduleType == "LM35":
-			self._tempC = rawValue * 0.48828125
+	def tempC(self, dataList):
+		"""
+		dataList => A two value touple containing the sensor type and raw value
+				from the sensor
+		"""
+
+		self.LOGGER.debug("Setting tempC with dataList {}".format(dataList))
+		if dataList[0] == "LM35":
+			self._tempC = dataList[1] * 0.48828125
 		else:
 			self._tempC = None
 

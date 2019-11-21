@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import sys
 
-LOGGER = logging.getLogger("__main__.thermostat.py")
+LOGGER = logging.getLogger("__main__.  thermostat.py")
 
 CONFIG_FILE = "config/default.json"
 
@@ -12,8 +12,7 @@ class Thermostat:
 	"""
 	A class to create a Thermostat module.
 	
-	It can contain any number or types of sensors as long as a formula is 
-	created to convert to celsius.
+	It can contain any number of sensors as long as a formula is created.
 	
 	You can also group the sensors to get an average temp of the group.
 	"""
@@ -27,13 +26,9 @@ class Thermostat:
 		kwargs => When called, any setting can be overridden here in the 
 				format   SETTING=VALUE
 				
-		NOTE: A board must be passed in the kwargs.
-				The board is a PyMata3 instance.
-				Pass in the form -- board=PyMata3.board
-				
-				if "config" is declared, all other settings, minus the board, declared will be ignored.
+				if "config" is declared, all other settings declared will be ignored.
 		"""
-		self.LOGGER = logging.getLogger("__main__.thermostat.Thermostat")
+		self.LOGGER = logging.getLogger("__main__.  thermostat.Thermostat")
 
 		# Load the default settings first
 		self.settings = self.loadConfig(CONFIG_FILE)
@@ -45,7 +40,7 @@ class Thermostat:
 		# Check for user setting in default location
 		userSettings = self.loadConfig(Path(Path.home().joinpath(self.settings["USER_DIR"]).joinpath(self.settings["USER_CONFIG"])))
 		if type(userSettings) != dict:
-			self.LOGGER.warning("User settings did not load.  Check log file")
+			self.LOGGER.error("User settings did not load.  Check log file")
 		else:
 			self.updateConfig(userSettings)
 		self.LOGGER.debug("Settings after default user update:  {}".format(self.settings))
@@ -65,22 +60,17 @@ class Thermostat:
 				self.changeSetting(setting, value)
 		self.LOGGER.debug("Settings after changing settings with __init__:  {}".format(self.settings))
 		
-		if board == None:
-		#if "board" not in kwargs:
-			self.LOGGER.error("No board was passed.  This will not work")
-			sys.exit()
-		else:
+		if board:
 			self.board = board
+		else:
+			self.LOGGER.error("No board is passed to the thermostat.  Shutting down")
+			sys.exit()
 		
-		# Now the not so boring stuff
 		self.tempSensors = {}
 		self.groups = {}
 		
-		self._state = self.settings["DEFAULT_STATE"]
-		self._mode = self.settings["DEFAULT_MODE"]
-		
-		self._cooling = False
-		self._heating = False
+		self._state = "OFF"
+		self._mode = "AUTO"
 		
 	@property
 	def state(self):
@@ -92,8 +82,6 @@ class Thermostat:
 			self._state = state
 		else:
 			LOGGER.debug("{} is not a valid STATE for Thermostat").format(state)
-			LOGGER.debug("Defaulting to OFF state")
-			self._state = "OFF"
 	
 	@property
 	def mode(self):
@@ -106,46 +94,6 @@ class Thermostat:
 				self._mode = "MANUAL"
 			else:
 				self._mode = "AUTO"
-	
-	@property
-	def cooling(self):
-		return self._cooling
-	
-	@cooling.setter
-	def cooling(self, pin):
-		boardReading = self.board.digital_read(pin)
-		if boardReading:
-			board.digital_write(pin, 0)
-			self.LOGGER.info("Turned cooling off")
-			self._cooling = False
-		else:
-			if self.state == "COOL":
-				board.digital_write(pin, 1)
-				self.LOGGER.info("Turned cooling on")
-				self._cooling = True
-			else:
-				self.LOGGER.error("The thermostat is not in COOL mode")
-		boardReading = self.board.digital_read(pin)
-		
-	@property
-	def heating(self):
-		return self._heating
-	
-	@heating.setter
-	def heating(self, pin):
-		boardReading = self.board.digital_read(pin)
-		if boardReading:
-			board.digital_write(pin, 0)
-			self.LOGGER.info("Turned heating off")
-			self._heating = False
-		else:
-			if self.state == "HEAT":
-				board.digital_write(pin, 1)
-				self.LOGGER.info("Turned heating on")
-				self._heating = True
-			else:
-				self.LOGGER.error("The thermostat is not in HEAT mode")
-		boardReading = self.board.digital_read(pin)
 
 	def loadConfig(self, configFile):
 		try:
@@ -211,7 +159,7 @@ class Thermostat:
 			for sensor in args:
 				groupedSensors.append(sensor)
 			self.groups[name] = groupedSensors
-			self.LOGGER.info("The group {} was created".format(name))
+			self.LOGGER.debug("Created the group {}".format(name))
 			return True
 		self.LOGGER.warning("The group {} already exists".format(name))
 		return False
@@ -226,10 +174,11 @@ class Thermostat:
 		sensor => The sensor to add to the group
 		"""
 		group = group.upper()
+		
 		if group in self.groups:
 			if sensor not in self.groups[group]:
 				self.groups[group].append(sensor)
-				self.LOGGER.info("Sensor {} is added to group {}".format(sensor, group))
+				print(self.groups)
 				return True
 			self.LOGGER.warning("{} sensor is already a member of the group {}".format(sensor, group))
 			return False
@@ -248,29 +197,33 @@ class Thermostat:
 				i = 0
 				reading = []
 				while i < 100:
-					#sensor.tempC = self.board.analog_read(sensor.controlPin)
+				
+				#sensor.tempC = self.board.analog_read(sensor.controlPin)
 					r = self.board.analog_read(sensor.controlPin)
 					self.LOGGER.debug(r)
 					reading.append(r)
 					self.board.sleep(.005)
 					i = i + 1
-				sensor.tempC = sum(reading) / len(reading)
+				sensor.tempC = (sensor.moduleType, sum(reading) / len(reading))
 			except Exception as e:
+				self.LOGGER.debug(e)
 				self.LOGGER.error("Bad reading pin {} -- {}".format(sensor.controlPin, e))
 			return sensor.tempC
-		
+
 		area = area.upper()
 		temp = None
-		
 		# Check the single areas first
 		if area in self.tempSensors:
-			temp = getAverage(self.tempSensors[area])
+			getAverage(self.tempSensors[area])
+			self.LOGGER.info("Temp in area {} is {}C".format(area, self.tempSensors[area].tempC))
+			temp = self.tempSensors[area].tempC
 			
 		# If not there, check if a group is asked for
 		elif area in self.groups:
 			tempList = []
 			for sensor in self.groups[area]:
-				tempList.append(getAverage(sensor))
+				getAverage(sensor)
+				tempList.append(sensor.tempC)
 			temp = sum(tempList) / len(tempList)
 			
 		else:

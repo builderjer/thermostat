@@ -121,7 +121,7 @@ THERMOSTAT.addSensor(TempSensor("lm35", 5), "livingroom")
 # Add the sensors to the board
 for sensor in THERMOSTAT.tempSensors:
 	board.set_pin_mode(THERMOSTAT.tempSensors[sensor].controlPin, Constants.ANALOG)
-	LOGGER.info("Sensor {} of type {} added on pin {}".format(sensor, THERMOSTAT.tempSensors[sensor].moduleType, THERMOSTAT.tempSensors[sensor].controlPin))
+	LOGGER.debug("Sensor {} of type {} added on pin {}".format(sensor, THERMOSTAT.tempSensors[sensor].moduleType, THERMOSTAT.tempSensors[sensor].controlPin))
 
 # Create a group to get an average temp of the house
 THERMOSTAT.createGroup("house")
@@ -155,7 +155,7 @@ while True:
 		if HVAC.heat == False:
 			HVAC.turnHeatOn()
 	print("heat is {}".format(HVAC.heat))
-	print(houseTemp)
+	print("house temp is {}".format(houseTemp))
 	print("hallway: {}".format(THERMOSTAT.getTemp("hallway")))
 	print("masterbed: {}".format(THERMOSTAT.getTemp("masterbed")))
 	print("livingroom: {}".format(THERMOSTAT.getTemp("livingroom")))
