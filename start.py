@@ -63,14 +63,19 @@ CONSOLE_LOGGER = logging.StreamHandler()
 CONSOLE_LOGGER.setFormatter(logging.Formatter("%(levelname)s : %(name)s : %(message)s"))
 LOGGER.addHandler(FILE_LOGGER)
 
+# FIXME:  Logging is not quite right
+
 # Set the logging level
 if args.debug:
+	LOGGER.setLevel(logging.DEBUG)
 	FILE_LOGGER.setLevel(logging.DEBUG)
 	LOGGER.debug("Logging set to DEBUG")
 else:
+	LOGGER.setLevel(logging.INFO)
 	FILE_LOGGER.setLevel(logging.INFO)
 	LOGGER.info("Logging set to INFO")
 if args.verbose:
+	LOGGER.setLevel(logging.INFO)
 	CONSOLE_LOGGER.setLevel(logging.DEBUG)
 	LOGGER.addHandler(CONSOLE_LOGGER)
 
@@ -159,6 +164,7 @@ def changeBoardState(pin):
 		board.sleep(.1)
 	except Exception as e:
 		LOGGER.warning("Could not turn on pin {}".format(pin))
+	LOGGER.debug("changeBoardState pin {}".format(pin))
 		
 def setOutput(temp):
 	if SETTINGS["OUTPUT_FORMAT"] == "F":
@@ -214,6 +220,11 @@ while True:
 					LOGGER.debug("Temp in {}:  {}".format(area, ((t * 1.8) + 32)))
 			# Only poll every so often.  Change this if you would like
 			board.sleep(15)
+		
+		# BUG:  Hack to make sure the HVAC stays out of COOLING state while Thermostat is in HEAT mode
+		if HVAC.state == "COOLING":
+			if HVAC.turnCoolOff():
+				changeBoardState(HVAC.coolControl[1])
 
 			#HVAC.turnHeatOff()
 		#for area, sensor in THERMOSTAT.tempSensors.items():
@@ -222,8 +233,8 @@ while True:
 		#print(houseTemp)
 		#board.sleep(15)
 
-	if HVAC.state == "COOLING":
-		continue
+	#if HVAC.state == "COOLING":
+		#continue
 				
 	#if round(houseTemp) > SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
 	##if round(houseTemp) > IDEALTEMP:
