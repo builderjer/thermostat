@@ -167,6 +167,7 @@ def setOutput(temp):
 		
 # Turn everything off
 if HVAC.turnHeatOff():
+	print("HVAC off")
 	changeBoardState(HVAC.heatControl[1])
 if HVAC.turnCoolOff():
 	changeBoardState(HVAC.coolControl[1])
@@ -178,13 +179,15 @@ THERMOSTAT.state = "HEAT"
 while True:
 	
 	if THERMOSTAT.state == "HEAT":
+		LOGGER.debug(THERMOSTAT.state)
+		print(THERMOSTAT.state, HVAC.state)
 		while HVAC.state == "OFF":
 			# While it is off, keep checking the temp to make appropriate adjustments		
 			houseTemp = setOutput(THERMOSTAT.getTemp("house"))
 			if houseTemp < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
 				# Its cold, turn the heater on
 				if HVAC.turnHeatOn():
-					changeBoardState(HVAC.heatControl[0]
+					changeBoardState(HVAC.heatControl[0])
 					LOGGER.info("Turned heat on")
 				else:
 					LOGGER.warning("Could not turn heat on")

@@ -7,6 +7,9 @@ import os
 
 LOGGER = logging.getLogger("__main__.  thermostat.py")
 
+MODE = ["AUTO", "MANUAL"]
+STATES = ["OFF", "FAN", "HEAT", "COOL"]
+
 class Thermostat:
 	"""
 	A class to create a Thermostat module.
@@ -15,8 +18,6 @@ class Thermostat:
 	
 	You can also group the sensors to get an average temp of the group.
 	"""
-	MODE = ["AUTO", "MANUAL"]
-	STATES = ["OFF", "FAN", "HEAT", "COOL"]
 	# STATES.FAN is not implemented yet
 	
 	def __init__(self, *args, **kwargs):
@@ -26,6 +27,8 @@ class Thermostat:
 		kwargs => When called, any setting can be overridden here in the 
 				format   SETTING=VALUE
 		"""
+
+		
 		self.LOGGER = logging.getLogger("__main__.  thermostat.Thermostat")
 		
 		self.tempSensors = {}
