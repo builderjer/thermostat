@@ -1,9 +1,11 @@
 import logging
 import sys
 
+from pymata_aio.constants import Constants
+
 LOGGER = logging.getLogger("__main__.hvac.py")
 
-CONFIG_FILE = "config/default.json"
+STATES = ["OFF", "HEATING", "COOLING"]
 
 class HVAC:
 	def __init__(self, board=None):
@@ -13,6 +15,7 @@ class HVAC:
 		self._cool = 0
 		self._heatControl = ()
 		self._coolControl = ()
+		self._state = "OFF"
 		
 		if board == None:
 		#if "board" not in kwargs:
@@ -39,25 +42,65 @@ class HVAC:
 		self._cool = self.board.digital_read(pin)
 		self.LOGGER.debug("Set cool to {}".format(self.cool))
 		
-	def setPins(self, heatOrCool, onPin, offPin, sensePin):
-		if heatOrCool.upper() == "HEAT":
-			self._heatControl = (onPin, offPin, sensePin)
-		elif heatOrCool.upper() == "COOL":
-			self._coolControl == (onPin, offPin, sensePin)
-		else:
-			LOGGER.error("Control pins must be HEAT or COOL")
-			self._heatControl = ()
-			self._coolControl = ()
+	@property
+	def heatControl(self):
+		return self._heatControl
 	
+	@setter.heatControl
+	def heatControl(self, controlPins):
+		"""
+		controlPins => (on pin, off pin, sensor pin)
+			on pin:  The pin used to turn the heater on
+			off pin:  The pin used to turn the heater off
+			sensor pin: Used with latching relays.  If power outage, the state of the heater stays
+		"""
+		self._heatControl = controlPins
+		
+	@property
+	def coolControl(self):
+		return self._coolControl
+	
+	@setter.coolControl
+	def coolControl(self, controlPins):
+		"""
+		controlPins => (on pin, off pin, sensor pin)
+			on pin:  The pin used to turn the cooler on
+			off pin:  The pin used to turn the cooler off
+			sensor pin: Used with latching relays.  If power outage, the state of the cooler stays
+		"""
+		self._coolControl = controlPins
+		
+	@property
+	def state(self):
+		return self._state
+	
+	@setter.state
+	def state(self, state):
+		if state in STATES:
+			self._state = state
+		else:
+			self._state = "OFF"
+			
+	def setState(self, dataList):
+		# Check if it is for the heater or cooler
+		if dataList[0] == self.heatControl[2]:
+			self.heat = dataList[1]
+			if self.heat:
+				self.state = "HEATING"
+		elif dataList[0] == self.coolControl[2]:
+			self.cool = dataList[1]
+			if self.cool:
+				self.state = "COOLING"
+		else:
+			self.state = "OFF"
+
 	def turnHeatOn(self):
 		try:
 			self.board.digital_write(self._heatControl[0], 1)
 			self.board.sleep(.1)
-			
 			self.board.digital_write(self._heatControl[0], 0)
-			self.board.sleep(.5)
-			self.board.digital_read(self._heatControl[2])
-			self.heat = self._heatControl[2]
+			self.board.sleep(.1)
+			
 		except Exception as e:
 			self.LOGGER.error("Error turning on heat -- {}".format(e))
 		self.LOGGER.info("Turned heat on")
@@ -68,9 +111,7 @@ class HVAC:
 			self.board.digital_write(self._heatControl[1], 1)
 			self.board.sleep(.1)
 			self.board.digital_write(self._heatControl[1], 0)
-			self.board.sleep(.5)
-			self.board.digital_read(self._heatControl[2])
-			self.heat = self._heatControl[2]
+			self.board.sleep(.1)
 		except Exception as e:
 			self.LOGGER.error("Error turning on heat -- {}".format(e))
 		self.LOGGER.info("Turned heat off")

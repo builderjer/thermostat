@@ -24,7 +24,7 @@ class TempSensor:
 		self.LOGGER = logging.getLogger("__main__.  sensors.TempSensor")
 		self.LOGGER.debug("Created TempSensor with moduleType {} and controlPin {}".format(moduleType, controlPin))
 		
-		self.moduleType = moduleType.upper()
+		self._moduleType = moduleType.upper()
 		
 		if type(controlPin) == int:
 			self._controlPin = controlPin
@@ -33,14 +33,14 @@ class TempSensor:
 		
 		self._tempC = None
 		
-	@property
-	def controlPin(self):
-		return self._controlPin
+	#@property
+	#def controlPin(self):
+		#return self._controlPin
 	
-	@controlPin.setter
-	def controlPin(self, pinNumber):
-		self.LOGGER.debug("Setting controlPin number {}".format(pinNumber))
-		self._controlPin = pinNumber
+	#@controlPin.setter
+	#def controlPin(self, pinNumber):
+		#self.LOGGER.debug("Setting controlPin number {}".format(pinNumber))
+		#self._controlPin = pinNumber
 	
 	@property
 	def tempC(self):

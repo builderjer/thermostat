@@ -7,17 +7,13 @@ raspberry pi.
 Requirements:
 	pymata-aio => https://github.com/MrYsLab/pymata-aio
 	
-Optional:
-	paho-mqtt => https://github.com/eclipse/paho.mqtt.python
-		This module is required if you want to connect to a MQTT broker
-		
 The default config file is hard coded here.  Changing this is not recommended.
 To override, create a json encoded file at <your home directory>/.config/thermostat/config.json
 Any settings you find in the default config file can be overridden there.
 """
 
 __author__ = "builderjer"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 # Builtins
 import logging
@@ -27,11 +23,6 @@ import argparse
 import sys
 import time
 import signal
-
-# Temperary settings to just make sure this works
-MAXTEMP= 69
-MINTEMP = 67
-IDEALTEMP = 68
 
 # Set up the signal handler for shutdown
 def shutdown(sig, frame):
@@ -47,8 +38,11 @@ parser.add_argument("--debug", help="Output debuging symbols", action="store_tru
 parser.add_argument("-v", "--verbose", help="Verbose symbols", action="store_true")
 args = parser.parse_args()
 
+#print(sys.path[0])
+#p = Path(__file__)
+#print(p.absolute())
 # Define some global variables
-CONFIG_FILE = "config/default.json"
+CONFIG_FILE = Path(sys.path[0]).joinpath("config/default.json")
 
 # Get the default settings
 SETTINGS = {}
@@ -60,6 +54,9 @@ if Path(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"]
 
 	# Move it to a backup file
 	Path(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"])).rename(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"] + ".old"))
+else:
+	if not os.path.exists(Path(Path.home().joinpath(SETTINGS["USER_DIR"])):
+    	os.makedirs(Path(Path.home().joinpath(SETTINGS["USER_DIR"]))
 
 # Create a logger
 LOGGER = logging.getLogger(__name__)
@@ -90,18 +87,13 @@ except ModuleNotFoundError as e:
 	LOGGER.error(e)
 
 # paho-mqtt is optional, but recommended for ease of communication
-try:
-	import paho.mqtt.client as mqtt
-	import paho.mqtt.publish as mqtt_pub
-	MQTT_ENABLED = True
-except ModuleNotFoundError:
-	MQTT_ENABLED = False
-	LOGGER.warning("Package paho-mqtt is not installed.  MQTT communication will be disabled")
-
-# Import local libraries
-import thermostat
-from sensors import TempSensor
-from hvac import HVAC as hvac
+#try:
+	#import paho.mqtt.client as mqtt
+	#import paho.mqtt.publish as mqtt_pub
+	#MQTT_ENABLED = True
+#except ModuleNotFoundError:
+	#MQTT_ENABLED = False
+	#LOGGER.warning("Package paho-mqtt is not installed.  MQTT communication will be disabled")
 
 # Override with user settings
 try:
@@ -114,8 +106,13 @@ try:
 				LOGGER.warning("{} is not a valid setting.  Please refer to the default settings for valid settings".format(setting))
 except FileNotFoundError:
 	LOGGER.warning("No user config file.  Using default")
+	
+# Import local libraries
+import thermostat
+from sensors import TempSensor
+from hvac import HVAC as hvac
 
-t_time = time.ctime(time.time())
+thermostat_time = time.ctime(time.time())
 
 # Start up the Arduino board
 # Specify a com_port so that more than one board can be used
@@ -131,7 +128,7 @@ if SETTINGS["SENSORS"]:
 		THERMOSTAT.addSensor(TempSensor(sensor[0], sensor[1]), area)
 		# Add it to the board
 		board.set_pin_mode(THERMOSTAT.tempSensors[area].controlPin, Constants.ANALOG)
-		print(THERMOSTAT.tempSensors)
+		#print(THERMOSTAT.tempSensors)
 		#LOGGER.debug("Sensor {} of type {} added on pin {}".format(sensor, THERMOSTAT.tempSensors[sensor].moduleType, THERMOSTAT.tempSensors[sensor].controlPin))
 else:
 	LOGGER.error("No sensors in config file")
@@ -150,12 +147,37 @@ if SETTINGS["SENSOR_GROUPS"]:
 HVAC = hvac(board=board)
 
 # Set the pins for heating and cooling control
-HVAC.setPins("heat", SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_ON"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_SENSE"])
-HVAC.setPins("cool", SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_ON"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_SENSE"])
+HVAC.heatControl = (SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_ON"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_SENSE"])
+HVAC.coolControl = (SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_ON"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_SENSE"])
+
+# Add them to the board
+board.set_pin_mode(HVAC.heatControl[0], Constants.OUTPUT)
+board.set_pin_mode(HVAC.heatControl[1], Constants.OUTPUT)
+board.set_pin_mode(HVAC.heatControl[2], Constants.INPUT, HVAC.setState)
+
+board.set_pin_mode(HVAC.coolControl[0], Constants.OUTPUT)
+board.set_pin_mode(HVAC.coolControl[1], Constants.OUTPUT)
+board.set_pin_mode(HVAC.coolControl[2], Constants.INPUT, HVAC.setState)
 
 # Main loop
 while True:
-	houseTemp = THERMOSTAT.getTemp("house")
+	
+	while HVAC.state == "OFF":
+		# While it is off, keep checking the temp to make appropriate adjustments
+		#houseTemp = THERMOSTAT.getTemp("house")
+		
+		# TODO:  Add in logic for summer and winter
+		
+		# It is winter time now, so we will default to heat mode
+		if THERMOSTAT.getTemp("house") < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
+			# Its cold, turn the heater on
+			HVAC.turnHeatOn()
+	
+	while HVAC.state == "HEATING":
+		if THERMOSTAT.getTemp("house") >= SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"] + 1:
+			HVAC.turnHeatOff()
+
+				
 	if round(houseTemp) > SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
 	#if round(houseTemp) > IDEALTEMP:
 		if HVAC.heat == 1:
