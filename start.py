@@ -155,19 +155,22 @@ HVAC = hvac(board=board)
 HVAC.setPins("heat", SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_ON"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_SENSE"])
 HVAC.setPins("cool", SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_ON"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_SENSE"])
 
+HVAC.turnHeatOff()
+#HVAC.turnCoolOff()
+
 # Main loop
 while True:
 	houseTemp = THERMOSTAT.getTemp("house")
 	if round(houseTemp) > SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
 	#if round(houseTemp) > IDEALTEMP:
-		if HVAC.heat == 1:
-			LOGGER.debug(HVAC.heat)
-			HVAC.turnHeatOff()
+	#	if HVAC.heat == 1:
+		LOGGER.debug(HVAC.heat)
+		HVAC.turnHeatOff()
 	if round(houseTemp) < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
 	#if round(houseTemp) < IDEALTEMP:
-		if HVAC.heat == 0:
-			LOGGER.debug(HVAC.heat)
-			HVAC.turnHeatOn()
+	#	if HVAC.heat == 0:
+		LOGGER.debug(HVAC.heat)
+		HVAC.turnHeatOn()
 			
 	LOGGER.debug(HVAC.heat)
 	if args.verbose:
