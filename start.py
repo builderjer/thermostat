@@ -31,6 +31,7 @@ def shutdown(sig, frame):
 	sys.exit()
 
 signal.signal(signal.SIGTERM, shutdown)
+signal.signal(signal.SIGINT, shutdown)
 
 # Set up the parser
 parser = argparse.ArgumentParser()
@@ -38,16 +39,13 @@ parser.add_argument("--debug", help="Output debuging symbols", action="store_tru
 parser.add_argument("-v", "--verbose", help="Verbose symbols", action="store_true")
 args = parser.parse_args()
 
-#print(sys.path[0])
-#p = Path(__file__)
-#print(p.absolute())
 # Define some global variables
 CONFIG_FILE = Path(sys.path[0]).joinpath("config/default.json")
 
 # Get the default settings
 SETTINGS = {}
 with open(CONFIG_FILE, "r") as settings:
-    SETTINGS = json.load(settings)
+	SETTINGS = json.load(settings)
 
 # Check if there is already a log file
 if Path(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"])).exists():
@@ -55,8 +53,7 @@ if Path(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"]
 	# Move it to a backup file
 	Path(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"])).rename(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"] + ".old"))
 else:
-	if not os.path.exists(Path(Path.home().joinpath(SETTINGS["USER_DIR"])):
-    	os.makedirs(Path(Path.home().joinpath(SETTINGS["USER_DIR"]))
+	os.makedirs(Path(Path.home().joinpath(SETTINGS["USER_DIR"])))
 
 # Create a logger
 LOGGER = logging.getLogger(__name__)
@@ -68,15 +65,13 @@ LOGGER.addHandler(FILE_LOGGER)
 
 # Set the logging level
 if args.debug:
-	LOGGER.setLevel(logging.DEBUG)
 	FILE_LOGGER.setLevel(logging.DEBUG)
 	LOGGER.debug("Logging set to DEBUG")
 else:
-	LOGGER.setLevel(logging.INFO)
 	FILE_LOGGER.setLevel(logging.INFO)
 	LOGGER.info("Logging set to INFO")
 if args.verbose:
-	CONSOLE_LOGGER.setLevel(logging.INFO)
+	CONSOLE_LOGGER.setLevel(logging.DEBUG)
 	LOGGER.addHandler(CONSOLE_LOGGER)
 
 # Import PyMata libraries
@@ -85,15 +80,6 @@ try:
 	from pymata_aio.constants import Constants
 except ModuleNotFoundError as e:
 	LOGGER.error(e)
-
-# paho-mqtt is optional, but recommended for ease of communication
-#try:
-	#import paho.mqtt.client as mqtt
-	#import paho.mqtt.publish as mqtt_pub
-	#MQTT_ENABLED = True
-#except ModuleNotFoundError:
-	#MQTT_ENABLED = False
-	#LOGGER.warning("Package paho-mqtt is not installed.  MQTT communication will be disabled")
 
 # Override with user settings
 try:
@@ -120,7 +106,8 @@ board = PyMata3(com_port="/dev/ttyACM0")
 
 # Setup the thermostat
 
-THERMOSTAT = thermostat.Thermostat(board=board)
+#THERMOSTAT = thermostat.Thermostat(board=board)
+THERMOSTAT = thermostat.Thermostat()
 
 # Add the temp sensors to the thermostat
 if SETTINGS["SENSORS"]:
@@ -144,7 +131,7 @@ if SETTINGS["SENSOR_GROUPS"]:
 
 # Set up the HVAC
 
-HVAC = hvac(board=board)
+HVAC = hvac()
 
 # Set the pins for heating and cooling control
 HVAC.heatControl = (SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_ON"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_SENSE"])
@@ -159,43 +146,100 @@ board.set_pin_mode(HVAC.coolControl[0], Constants.OUTPUT)
 board.set_pin_mode(HVAC.coolControl[1], Constants.OUTPUT)
 board.set_pin_mode(HVAC.coolControl[2], Constants.INPUT, HVAC.setState)
 
+# A few required functions
+def changeBoardState(pin):
+	"""
+	Sends a signal to the board to momentarily turn on and off a pin.
+	Used for latching relays
+	"""
+	try:
+		board.digital_write(pin, 1)
+		board.sleep(.1)
+		board.digital_write(pin, 0)
+		board.sleep(.1)
+	except Exception as e:
+		LOGGER.warning("Could not turn on pin {}".format(pin))
+		
+def setOutput(temp):
+	if SETTINGS["OUTPUT_FORMAT"] == "F":
+		temp = (temp * 1.8) + 32
+	return temp
+		
+# Turn everything off
+if HVAC.turnHeatOff():
+	changeBoardState(HVAC.heatControl[1])
+if HVAC.turnCoolOff():
+	changeBoardState(HVAC.coolControl[1])
+	
+# TODO:  This is a temp solution to turn the Thermostat into heat mode -- It's winter here
+THERMOSTAT.state = "HEAT"
+
 # Main loop
 while True:
 	
-	while HVAC.state == "OFF":
-		# While it is off, keep checking the temp to make appropriate adjustments
-		#houseTemp = THERMOSTAT.getTemp("house")
-		
-		# TODO:  Add in logic for summer and winter
-		
-		# It is winter time now, so we will default to heat mode
-		if THERMOSTAT.getTemp("house") < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
-			# Its cold, turn the heater on
-			HVAC.turnHeatOn()
+	if THERMOSTAT.state == "HEAT":
+		while HVAC.state == "OFF":
+			# While it is off, keep checking the temp to make appropriate adjustments		
+			houseTemp = setOutput(THERMOSTAT.getTemp("house"))
+			if houseTemp < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
+				# Its cold, turn the heater on
+				if HVAC.turnHeatOn():
+					changeBoardState(HVAC.heatControl[0]
+					LOGGER.info("Turned heat on")
+				else:
+					LOGGER.warning("Could not turn heat on")
+			if args.debug:
+				for area, sensor in THERMOSTAT.tempSensors.items():
+					t = sensor.tempC
+					LOGGER.debug("Temp in {}:  {}".format(area, ((t * 1.8) + 32)))
+			# Only poll every so often.  Change this if you would like
+			board.sleep(15)
 	
-	while HVAC.state == "HEATING":
-		if THERMOSTAT.getTemp("house") >= SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"] + 1:
-			HVAC.turnHeatOff()
+		while HVAC.state == "HEATING":
+			# Still have to keep checking the temp so it knows when to turn off.
+			houseTemp = setOutput(THERMOSTAT.getTemp("house"))
+			# Keeps the heater on until the house temp reaches 1 deg above default temp
+			if houseTemp >= SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"] + 1:
+				if HVAC.turnHeatOff():
+					changeBoardState(HVAC.heatControl[1])
+					LOGGER.info("Turned heat off")
+				else:
+					LOGGER.warning("Could not turn heat off")
+			if args.debug:
+				for area, sensor in THERMOSTAT.tempSensors.items():
+					t = sensor.tempC
+					LOGGER.debug("Temp in {}:  {}".format(area, ((t * 1.8) + 32)))
+			# Only poll every so often.  Change this if you would like
+			board.sleep(15)
 
+			#HVAC.turnHeatOff()
+		#for area, sensor in THERMOSTAT.tempSensors.items():
+			#t = sensor.tempC
+			#print("Temp in {}:  {}".format(area, ((t * 1.8) + 32)))
+		#print(houseTemp)
+		#board.sleep(15)
+
+	if HVAC.state == "COOLING":
+		continue
 				
-	if round(houseTemp) > SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
-	#if round(houseTemp) > IDEALTEMP:
-		if HVAC.heat == 1:
-			LOGGER.debug(HVAC.heat)
-			HVAC.turnHeatOff()
-	if round(houseTemp) < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
-	#if round(houseTemp) < IDEALTEMP:
-		if HVAC.heat == 0:
-			LOGGER.debug(HVAC.heat)
-			HVAC.turnHeatOn()
+	#if round(houseTemp) > SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
+	##if round(houseTemp) > IDEALTEMP:
+		#if HVAC.heat == 1:
+			#LOGGER.debug(HVAC.heat)
+			#HVAC.turnHeatOff()
+	#if round(houseTemp) < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
+	##if round(houseTemp) < IDEALTEMP:
+		#if HVAC.heat == 0:
+			#LOGGER.debug(HVAC.heat)
+			#HVAC.turnHeatOn()
 			
-	LOGGER.debug(HVAC.heat)
-	if args.verbose:
-		print("heat is {}".format(HVAC.heat))
-		print("house temp is {}".format(houseTemp))
-		print("hallway: {}".format(THERMOSTAT.getTemp("hallway")))
-		print("masterbed: {}".format(THERMOSTAT.getTemp("masterbed")))
-		print("livingroom: {}".format(THERMOSTAT.getTemp("livingroom")))
-	time.sleep(30)
+	#LOGGER.debug(HVAC.heat)
+	#if args.verbose:
+		#print("heat is {}".format(HVAC.heat))
+		#print("house temp is {}".format(houseTemp))
+		#print("hallway: {}".format(THERMOSTAT.getTemp("hallway")))
+		#print("masterbed: {}".format(THERMOSTAT.getTemp("masterbed")))
+		#print("livingroom: {}".format(THERMOSTAT.getTemp("livingroom")))
+	#time.sleep(30)
 	
 board.shutdown()

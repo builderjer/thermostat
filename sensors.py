@@ -4,7 +4,7 @@ https://github.com/builderjer/ZiggyAI
 """
 
 __author__ = "builderjer"
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 import logging
 
@@ -24,45 +24,27 @@ class TempSensor:
 		self.LOGGER = logging.getLogger("__main__.  sensors.TempSensor")
 		self.LOGGER.debug("Created TempSensor with moduleType {} and controlPin {}".format(moduleType, controlPin))
 		
-		self._moduleType = moduleType.upper()
+		self.moduleType = moduleType.upper()
+		
+		self._tempC = 0
 		
 		if type(controlPin) == int:
-			self._controlPin = controlPin
+			self.controlPin = controlPin
 		else:
-			self._controlPin = None
-		
-		self._tempC = None
-		
-	#@property
-	#def controlPin(self):
-		#return self._controlPin
-	
-	#@controlPin.setter
-	#def controlPin(self, pinNumber):
-		#self.LOGGER.debug("Setting controlPin number {}".format(pinNumber))
-		#self._controlPin = pinNumber
+			self.controlPin = None
 	
 	@property
 	def tempC(self):
 		return self._tempC
 	
 	@tempC.setter
-	def tempC(self, dataList):
-		"""
-		dataList => A two value touple containing the sensor type and raw value
-				from the sensor
-		"""
-
-		self.LOGGER.debug("Setting tempC with dataList {}".format(dataList))
-		if dataList[0] == "LM35":
-			self._tempC = dataList[1] * 0.48828125
-		else:
-			self._tempC = None
-
-class PhotoSensor:
-	"""
-	A photo resistor sensing the amount of light in a given area.
-	"""
-	def __init__(self, controlPin):
-		self.controlPin = controlPin
+	def tempC(self, temp):
+		# Put your conversions for each type of sensor here
+		if self.moduleType == "LM35":
+			temp = temp * 0.48828125
+		self._tempC = temp
+		self.LOGGER.debug("Setting tempC with temp {}".format(temp))
+			
+	def getTemp(self, dataList):
+		self.tempC = dataList[1]		
 	
