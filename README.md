@@ -1,3 +1,9 @@
+# ***DEV BRANCH***
+This is the development branch of my thermostat.
+I am trying to keep the latest working script here.
+This is still ***WAY*** raw!! 
+***USE AT YOUR OWN RISK***
+
 # Personal Thermostat
 Idea of building a smart thermostat with a raspberry pi or arduino.  Either way, it needs the same interfaces and such.
 
