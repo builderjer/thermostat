@@ -168,6 +168,10 @@ def setOutput(temp):
 		temp = (temp * 1.8) + 32
 	return temp
 		
+def readSensors():
+	for sensor in THERMOSTAT.tempSensors:
+		sensor.tempC = board.analog_read(sensor.controlPin)
+		
 # Turn everything off
 #if HVAC.turnHeatOff():
 changeBoardState(HVAC.heatControl[1])

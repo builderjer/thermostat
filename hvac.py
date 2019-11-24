@@ -58,6 +58,7 @@ class HVAC:
 			if dataList[1]:
 				self.state = "HEATING"
 			else:
+				
 				self.state = "OFF"
 			self.LOGGER.info("HVAC state set to {}".format(self.state))
 			return

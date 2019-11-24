@@ -124,6 +124,7 @@ class Thermostat:
 		# If not there, check if a group is asked for
 		elif area in self.groups:
 			tempList = []
+			
 			for sensor in self.groups[area]:
 				tempList.append(sensor.tempC)
 			temp = sum(tempList) / len(tempList)
