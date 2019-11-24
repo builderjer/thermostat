@@ -21,6 +21,7 @@ import json
 from pathlib import Path
 import argparse
 import sys
+import os
 import time
 import signal
 
@@ -120,8 +121,7 @@ if SETTINGS["SENSORS"]:
 		THERMOSTAT.addSensor(TempSensor(sensor[0], sensor[1]), area)
 		# Add it to the board
 		board.set_pin_mode(THERMOSTAT.tempSensors[area].controlPin, Constants.ANALOG)
-		#print(THERMOSTAT.tempSensors)
-		#LOGGER.debug("Sensor {} of type {} added on pin {}".format(sensor, THERMOSTAT.tempSensors[sensor].moduleType, THERMOSTAT.tempSensors[sensor].controlPin))
+		LOGGER.debug("Sensor {} of type {} added on pin {}".format(sensor, THERMOSTAT.tempSensors[area].moduleType, THERMOSTAT.tempSensors[area].controlPin))
 else:
 	LOGGER.error("No sensors in config file")
 	sys.exit()
