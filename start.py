@@ -166,11 +166,13 @@ def changeBoardState(pin):
 def setOutput(temp):
 	if SETTINGS["OUTPUT_FORMAT"] == "F":
 		temp = (temp * 1.8) + 32
+	LOGGER.debug(temp)
 	return temp
 		
 def readSensors():
 	for sensor in THERMOSTAT.tempSensors:
-		sensor.tempC = board.analog_read(sensor.controlPin)
+		THERMOSTAT.tempSensors[sensor].tempC = board.analog_read(THERMOSTAT.tempSensors[sensor].controlPin)
+		LOGGER.debug(THERMOSTAT.tempSensors[sensor].tempC)
 		
 # Turn everything off
 #if HVAC.turnHeatOff():
@@ -190,6 +192,7 @@ while True:
 	
 	while THERMOSTAT.state == "HEAT":
 		while HVAC.state == "OFF":
+			readSensors()
 			# While it is off, keep checking the temp to make appropriate adjustments		
 			houseTemp = setOutput(THERMOSTAT.getTemp("house"))
 			# I use round to keep the temp +- 0.5 deg of desired temp
@@ -209,10 +212,11 @@ while True:
 			board.sleep(15)
 	
 		while HVAC.state == "HEATING":
+			readSensors()
 			# Still have to keep checking the temp so it knows when to turn off.
 			houseTemp = setOutput(THERMOSTAT.getTemp("house"))
 			# Keeps the heater on until the house temp reaches 1 deg above default temp
-			if round(houseTemp) >= SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"] + 1:
+			if round(houseTemp) >= SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
 				if HVAC.turnHeatOff():
 					changeBoardState(HVAC.heatControl[1])
 					LOGGER.info("Turned heat off")

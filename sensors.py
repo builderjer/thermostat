@@ -54,7 +54,7 @@ class TempSensor:
 				from the sensor
 		"""
 		
-		self.LOGGER.debug("Setting tempC with dataList {}".format(dataList))
+		self.LOGGER.debug("Setting tempC with rawValue {}".format(rawValue))
 		if self.moduleType == "LM35":
 			self._tempC = rawValue * 0.48828125
 		#if dataList[0] == "LM35":

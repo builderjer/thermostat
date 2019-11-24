@@ -133,6 +133,6 @@ class Thermostat:
 		else:
 			self.LOGGER.warning("No area {} in senors or groups".format(area))
 			return None
-		
+		self.LOGGER.debug(temp)
 		return temp
 
