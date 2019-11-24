@@ -48,7 +48,7 @@ parser.add_argument("-v", "--verbose", help="Verbose symbols", action="store_tru
 args = parser.parse_args()
 
 # Define some global variables
-CONFIG_FILE = "/home/pi/thermostat/config/default.json"
+CONFIG_FILE = Path(sys.path[0]).joinpath("config/default.json")
 
 #CONFIG_FILE = "config/default.json"
 

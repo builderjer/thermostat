@@ -7,7 +7,7 @@ import sys
 LOGGER = logging.getLogger("__main__.  thermostat.py")
 
 #CONFIG_FILE = "config/default.json"
-CONFIG_FILE = "/home/pi/thermostat/config/default.json"
+CONFIG_FILE = Path(sys.path[0]).joinpath("config/default.json")
 
 class Thermostat:
 	"""
