@@ -92,8 +92,10 @@ class HVAC:
 		
 	def turnHeatOff(self):
 		if self.state == "HEATING":
+			self.LOGGER.debug("func turnHeatOff (True)")
 			return True
 		else:
+			self.LOGGER.debug("func turnHeatOff (False)")
 			return False
 		#try:
 			#self.board.digital_write(self._heatControl[1], 1)

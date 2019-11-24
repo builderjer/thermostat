@@ -61,7 +61,7 @@ LOGGER = logging.getLogger(__name__)
 FILE_LOGGER = logging.FileHandler(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"]))
 FILE_LOGGER.setFormatter(logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s'))
 CONSOLE_LOGGER = logging.StreamHandler()
-CONSOLE_LOGGER.setFormatter(logging.Formatter("%(levelname)s : %(name)s : %(message)s"))
+CONSOLE_LOGGER.setFormatter(logging.Formatter("%(levelname)s : %(name)s : %(lineno)d : %(message)s"))
 LOGGER.addHandler(FILE_LOGGER)
 
 # FIXME:  Logging is not quite right
@@ -76,7 +76,7 @@ if args.verbose:
 	CONSOLE_LOGGER.setLevel(logging.DEBUG)
 	LOGGER.addHandler(CONSOLE_LOGGER)
 	
-LOGGER.setLevel(logging.INFO)
+LOGGER.setLevel(logging.DEBUG)
 
 # Import PyMata libraries
 try:
@@ -169,10 +169,10 @@ def setOutput(temp):
 	return temp
 		
 # Turn everything off
-if HVAC.turnHeatOff():
-	changeBoardState(HVAC.heatControl[1])
-if HVAC.turnCoolOff():
-	changeBoardState(HVAC.coolControl[1])
+#if HVAC.turnHeatOff():
+changeBoardState(HVAC.heatControl[1])
+#if HVAC.turnCoolOff():
+changeBoardState(HVAC.coolControl[1])
 	
 # Add the sensor pins to the board
 board.set_pin_mode(HVAC.heatControl[2], Constants.INPUT, HVAC.setState)
@@ -190,6 +190,7 @@ while True:
 			houseTemp = setOutput(THERMOSTAT.getTemp("house"))
 			# I use round to keep the temp +- 0.5 deg of desired temp
 			if round(houseTemp) < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
+				LOGGER.debug(houseTemp)
 				# Its cold, turn the heater on
 				if HVAC.turnHeatOn():
 					changeBoardState(HVAC.heatControl[0])
