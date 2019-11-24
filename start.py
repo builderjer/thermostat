@@ -54,31 +54,29 @@ if Path(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"]
 	# Move it to a backup file
 	Path(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"])).rename(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"] + ".old"))
 else:
-	os.makedirs(Path(Path.home().joinpath(SETTINGS["USER_DIR"])))
+	os.makedirs(Path(Path.home().joinpath(SETTINGS["USER_DIR"])), exist_ok=True)
 
 # Create a logger
 LOGGER = logging.getLogger(__name__)
 FILE_LOGGER = logging.FileHandler(Path.home().joinpath(SETTINGS["USER_DIR"]).joinpath(SETTINGS["LOG_FILE"]))
 FILE_LOGGER.setFormatter(logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s'))
 CONSOLE_LOGGER = logging.StreamHandler()
-CONSOLE_LOGGER.setFormatter(logging.Formatter("%(levelname)s : %(name)s : %(message)s"))
+CONSOLE_LOGGER.setFormatter(logging.Formatter("%(levelname)s : %(name)s : %(lineno)d : %(message)s"))
 LOGGER.addHandler(FILE_LOGGER)
 
 # FIXME:  Logging is not quite right
 
 # Set the logging level
 if args.debug:
-	LOGGER.setLevel(logging.DEBUG)
 	FILE_LOGGER.setLevel(logging.DEBUG)
-	LOGGER.debug("Logging set to DEBUG")
 else:
-	LOGGER.setLevel(logging.INFO)
 	FILE_LOGGER.setLevel(logging.INFO)
-	LOGGER.info("Logging set to INFO")
+
 if args.verbose:
-	LOGGER.setLevel(logging.INFO)
 	CONSOLE_LOGGER.setLevel(logging.DEBUG)
 	LOGGER.addHandler(CONSOLE_LOGGER)
+	
+LOGGER.setLevel(logging.DEBUG)
 
 # Import PyMata libraries
 try:
@@ -130,12 +128,13 @@ else:
 if SETTINGS["SENSOR_GROUPS"]:
 	for group, sensors in SETTINGS["SENSOR_GROUPS"].items():
 		THERMOSTAT.createGroup(group)
+		# Add the sensors to the group
 		for sensor in sensors:
 			if sensor in THERMOSTAT.tempSensors:
 				THERMOSTAT.addSensorToGroup(group, THERMOSTAT.tempSensors[sensor])
-
+				LOGGER.debug("Sensor {} added to group {}".format(sensor, group))
+				
 # Set up the HVAC
-
 HVAC = hvac()
 
 # Set the pins for heating and cooling control
@@ -145,11 +144,9 @@ HVAC.coolControl = (SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_ON"], SETTINGS["HVAC"
 # Add them to the board
 board.set_pin_mode(HVAC.heatControl[0], Constants.OUTPUT)
 board.set_pin_mode(HVAC.heatControl[1], Constants.OUTPUT)
-board.set_pin_mode(HVAC.heatControl[2], Constants.INPUT, HVAC.setState)
 
 board.set_pin_mode(HVAC.coolControl[0], Constants.OUTPUT)
 board.set_pin_mode(HVAC.coolControl[1], Constants.OUTPUT)
-board.set_pin_mode(HVAC.coolControl[2], Constants.INPUT, HVAC.setState)
 
 # A few required functions
 def changeBoardState(pin):
@@ -171,26 +168,33 @@ def setOutput(temp):
 		temp = (temp * 1.8) + 32
 	return temp
 		
+def readSensors():
+	for sensor in THERMOSTAT.tempSensors:
+		sensor.tempC = board.analog_read(sensor.controlPin)
+		
 # Turn everything off
-if HVAC.turnHeatOff():
-	print("HVAC off")
-	changeBoardState(HVAC.heatControl[1])
-if HVAC.turnCoolOff():
-	changeBoardState(HVAC.coolControl[1])
+#if HVAC.turnHeatOff():
+changeBoardState(HVAC.heatControl[1])
+#if HVAC.turnCoolOff():
+changeBoardState(HVAC.coolControl[1])
 	
+# Add the sensor pins to the board
+board.set_pin_mode(HVAC.heatControl[2], Constants.INPUT, HVAC.setState)
+board.set_pin_mode(HVAC.coolControl[2], Constants.INPUT, HVAC.setState)
+
 # TODO:  This is a temp solution to turn the Thermostat into heat mode -- It's winter here
 THERMOSTAT.state = "HEAT"
 
 # Main loop
 while True:
 	
-	if THERMOSTAT.state == "HEAT":
-		LOGGER.debug(THERMOSTAT.state)
-		print(THERMOSTAT.state, HVAC.state)
+	while THERMOSTAT.state == "HEAT":
 		while HVAC.state == "OFF":
 			# While it is off, keep checking the temp to make appropriate adjustments		
 			houseTemp = setOutput(THERMOSTAT.getTemp("house"))
-			if houseTemp < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
+			# I use round to keep the temp +- 0.5 deg of desired temp
+			if round(houseTemp) < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
+				LOGGER.debug(houseTemp)
 				# Its cold, turn the heater on
 				if HVAC.turnHeatOn():
 					changeBoardState(HVAC.heatControl[0])
@@ -208,7 +212,7 @@ while True:
 			# Still have to keep checking the temp so it knows when to turn off.
 			houseTemp = setOutput(THERMOSTAT.getTemp("house"))
 			# Keeps the heater on until the house temp reaches 1 deg above default temp
-			if houseTemp >= SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"] + 1:
+			if round(houseTemp) >= SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"] + 1:
 				if HVAC.turnHeatOff():
 					changeBoardState(HVAC.heatControl[1])
 					LOGGER.info("Turned heat off")

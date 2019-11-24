@@ -29,7 +29,7 @@ class Thermostat:
 		"""
 
 		
-		self.LOGGER = logging.getLogger("__main__.  thermostat.Thermostat")
+		self.LOGGER = logging.getLogger("__main__.thermostat.Thermostat")
 		
 		self.tempSensors = {}
 		self.groups = {}
@@ -48,7 +48,7 @@ class Thermostat:
 				self._state = state
 				self.LOGGER.debug("Thermostat state changed to {}".format(state))
 		else:
-			self.LOGGER.debug("{} is not a valid STATE for Thermostat").format(state)
+			self.LOGGER.warning("{} is not a valid STATE for Thermostat").format(state)
 	
 	@property
 	def mode(self):
@@ -124,6 +124,7 @@ class Thermostat:
 		# If not there, check if a group is asked for
 		elif area in self.groups:
 			tempList = []
+			
 			for sensor in self.groups[area]:
 				tempList.append(sensor.tempC)
 			temp = sum(tempList) / len(tempList)
