@@ -52,7 +52,9 @@ class HVAC:
 		else:
 			self._state = "OFF"
 			
-	def setState(self, dataList):
+	def setHeatState(self, dataList):
+		self.LOGGER.debug("in setHeatState")
+	#def setState(self, dataList):
 		# Check if it is for the heater or cooler
 		if dataList[0] == self.heatControl[2]:
 			if dataList[1]:
@@ -62,7 +64,8 @@ class HVAC:
 				self.state = "OFF"
 			self.LOGGER.info("HVAC state set to {}".format(self.state))
 			return
-		
+	def setCoolState(self, dataList):
+		self.LOGGER.debug("in setCoolState")
 		if dataList[0] == self.coolControl[2]:
 			if dataList[1]:
 				self.state = "COOLING"

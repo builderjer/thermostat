@@ -181,8 +181,8 @@ changeBoardState(HVAC.heatControl[1])
 changeBoardState(HVAC.coolControl[1])
 	
 # Add the sensor pins to the board
-board.set_pin_mode(HVAC.heatControl[2], Constants.INPUT, HVAC.setState)
-board.set_pin_mode(HVAC.coolControl[2], Constants.INPUT, HVAC.setState)
+#board.set_pin_mode(HVAC.heatControl[2], Constants.INPUT, HVAC.setHeatState)
+#board.set_pin_mode(HVAC.coolControl[2], Constants.INPUT, HVAC.setCoolState)
 
 # TODO:  This is a temp solution to turn the Thermostat into heat mode -- It's winter here
 THERMOSTAT.state = "HEAT"
@@ -191,6 +191,8 @@ THERMOSTAT.state = "HEAT"
 while True:
 	
 	while THERMOSTAT.state == "HEAT":
+		board.set_pin_mode(HVAC.heatControl[2], Constants.INPUT, HVAC.setHeatState)
+		board.set_pin_mode(HVAC.coolControl[2], Constants.INPUT)
 		while HVAC.state == "OFF":
 			readSensors()
 			# While it is off, keep checking the temp to make appropriate adjustments		
@@ -216,7 +218,7 @@ while True:
 			# Still have to keep checking the temp so it knows when to turn off.
 			houseTemp = setOutput(THERMOSTAT.getTemp("house"))
 			# Keeps the heater on until the house temp reaches 1 deg above default temp
-			if round(houseTemp) >= SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
+			if houseTemp >= SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
 				if HVAC.turnHeatOff():
 					changeBoardState(HVAC.heatControl[1])
 					LOGGER.info("Turned heat off")
