@@ -29,7 +29,7 @@ class Thermostat:
 		"""
 
 		
-		self.LOGGER = logging.getLogger("__main__.  thermostat.Thermostat")
+		self.LOGGER = logging.getLogger("__main__.thermostat.Thermostat")
 		
 		self.tempSensors = {}
 		self.groups = {}
@@ -48,7 +48,7 @@ class Thermostat:
 				self._state = state
 				self.LOGGER.debug("Thermostat state changed to {}".format(state))
 		else:
-			self.LOGGER.debug("{} is not a valid STATE for Thermostat").format(state)
+			self.LOGGER.warning("{} is not a valid STATE for Thermostat").format(state)
 	
 	@property
 	def mode(self):

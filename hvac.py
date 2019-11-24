@@ -1,8 +1,6 @@
 import logging
 import sys
 
-from pymata_aio.constants import Constants
-
 LOGGER = logging.getLogger("__main__.hvac.py")
 
 STATES = ["OFF", "HEATING", "COOLING"]
@@ -11,36 +9,9 @@ class HVAC:
 	def __init__(self):
 		self.LOGGER = logging.getLogger("__main__.hvac.HVAC")
 
-		#self._heat = 0
-		#self._cool = 0
 		self._heatControl = ()
 		self._coolControl = ()
 		self._state = "OFF"
-		
-		#if board == None:
-		##if "board" not in kwargs:
-			#self.LOGGER.error("No board was passed.  This will not work")
-			#sys.exit()
-		#else:
-			#self.board = board
-		
-	#@property
-	#def heat(self):
-		#return self._heat
-	
-	#@heat.setter
-	#def heat(self, state):
-		#self._heat = state
-		#self.LOGGER.debug("Set heat to {}".format(self.heat))
-		
-	#@property
-	#def cool(self):
-		#return self._cool
-	
-	#@cool.setter
-	#def cool(self, state):
-		#self._cool = state
-		#self.LOGGER.debug("Set cool to {}".format(self.cool))
 		
 	@property
 	def heatControl(self):
@@ -88,13 +59,17 @@ class HVAC:
 				self.state = "HEATING"
 			else:
 				self.state = "OFF"
-				
+			self.LOGGER.info("HVAC state set to {}".format(self.state))
+			return
+		
 		if dataList[0] == self.coolControl[2]:
 			if dataList[1]:
 				self.state = "COOLING"
 			else:
 				self.state = "OFF"
-		self.LOGGER.info("HVAC state set to {}".format(self.state))
+			self.LOGGER.info("HVAC state set to {}".format(self.state))
+			return
+		
 
 	def turnHeatOn(self):
 		"""

@@ -8,7 +8,7 @@ __version__ = "0.1.3"
 
 import logging
 
-LOGGER = logging.getLogger("__main__.  sensors.py")
+LOGGER = logging.getLogger("__main__.sensors.py")
 
 class TempSensor:
 	"""
@@ -21,7 +21,7 @@ class TempSensor:
 			
 		<int> controlPin => The pin on the microcontroller the sensor is connected to.
 		"""
-		self.LOGGER = logging.getLogger("__main__.  sensors.TempSensor")
+		self.LOGGER = logging.getLogger("__main__.sensors.TempSensor")
 		self.LOGGER.debug("Created TempSensor with moduleType {} and controlPin {}".format(moduleType, controlPin))
 		
 		self.moduleType = moduleType.upper()
