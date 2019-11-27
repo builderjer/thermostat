@@ -12,11 +12,11 @@ class HVAC:
 		self._heatControl = ()
 		self._coolControl = ()
 		self._state = "OFF"
-		
+
 	@property
 	def heatControl(self):
 		return self._heatControl
-	
+
 	@heatControl.setter
 	def heatControl(self, controlPins):
 		"""
@@ -26,11 +26,11 @@ class HVAC:
 			sensor pin: Used with latching relays.  If power outage, the state of the heater stays
 		"""
 		self._heatControl = controlPins
-		
+
 	@property
 	def coolControl(self):
 		return self._coolControl
-	
+
 	@coolControl.setter
 	def coolControl(self, controlPins):
 		"""
@@ -40,30 +40,30 @@ class HVAC:
 			sensor pin: Used with latching relays.  If power outage, the state of the cooler stays
 		"""
 		self._coolControl = controlPins
-		
+
 	@property
 	def state(self):
 		return self._state
-	
+
 	@state.setter
 	def state(self, state):
 		if state in STATES:
 			self._state = state
 		else:
 			self._state = "OFF"
-			
-	def setHeatState(self, dataList):
-		self.LOGGER.debug("in setHeatState")
-	#def setState(self, dataList):
-		# Check if it is for the heater or cooler
-		if dataList[0] == self.heatControl[2]:
-			if dataList[1]:
-				self.state = "HEATING"
-			else:
-				
-				self.state = "OFF"
+
+	def setHeatState(self):
+		if self.state == "OFF":
+			self.state = "HEATING"
 			self.LOGGER.info("HVAC state set to {}".format(self.state))
-			return
+			return self.state
+		if self.state == "HEATING":
+			self.state = "OFF"
+			self.LOGGER.info("HVAC state set to {}".format(self.state))
+			return self.state
+		else:
+			return False
+
 	def setCoolState(self, dataList):
 		self.LOGGER.debug("in setCoolState")
 		if dataList[0] == self.coolControl[2]:
@@ -73,64 +73,36 @@ class HVAC:
 				self.state = "OFF"
 			self.LOGGER.info("HVAC state set to {}".format(self.state))
 			return
-		
 
 	def turnHeatOn(self):
 		"""
-		returns boolean to use in main code to trigger a change
 		"""
 		if self.state == "OFF":
 			return True
 		else:
 			return False
-		#try:
-			#self.board.digital_write(self._heatControl[0], 1)
-			#self.board.sleep(.1)
-			#self.board.digital_write(self._heatControl[0], 0)
-			#self.board.sleep(.1)
-			
-		#except Exception as e:
-			#self.LOGGER.error("Error turning on heat -- {}".format(e))
-		#self.LOGGER.info("Turned heat on")
-		#print("turned heat on")
-		
+
 	def turnHeatOff(self):
 		if self.state == "HEATING":
-			self.LOGGER.debug("func turnHeatOff (True)")
 			return True
 		else:
-			self.LOGGER.debug("func turnHeatOff (False)")
 			return False
-		#try:
-			#self.board.digital_write(self._heatControl[1], 1)
-			#self.board.sleep(.1)
-			#self.board.digital_write(self._heatControl[1], 0)
-			#self.board.sleep(.1)
-		#except Exception as e:
-			#self.LOGGER.error("Error turning on heat -- {}".format(e))
-		#self.LOGGER.info("Turned heat off")
-		#print("turned heat off")
-		
+
+	#def changeHeatState(self, onOff):
+		#"""
+		#onOff => Self explanitory
+			#Must be either "ON" or "OFF"
+		#"""
+		#if onOff.upper() == "OFF":
+			#if self.state
 	def turnCoolOn(self):
 		if self.state == "OFF":
 			return True
 		else:
 			return False
-		#self.board.digital_write(self._coolControl[0], 1)
-		#self.board.sleep(.1)
-		#self.board.digital_write(self._coolControl[0], 0)
-		#self.board.sleep(.5)
-		#self.board.digital_read(self._coolControl[2])
-		#self.cool = self._coolControl[2]
-		
+
 	def turnCoolOff(self):
 		if self.state == "COOLING":
 			return True
 		else:
 			return False
-		#self.board.digital_write(self._coolControl[1], 1)
-		#self.board.sleep(.1)
-		#self.board.digital_write(self._heatControl[1], 0)
-		#self.board.sleep(.5)
-		#self.board.digital_read(self._coolControl[2])
-		#self.cool = self._coolControl[2]
