@@ -169,11 +169,13 @@ def turnOnOff(heatCool, onOff):
 		board.sleep(0.1)
 		board.digital_write(hc[0], 0)
 		board.sleep(0.1)
+		LOGGER.info("Turned heat on")
 	elif onOff.upper() == "OFF":
 		board.digital_write(hc[1], 1)
 		board.sleep(0.1)
 		board.digital_write(hc[1], 0)
 		board.sleep(0.1)
+		LOGGER.info("Turned heat off")
 	else:
 		raise AttributeError("Only 'on' or 'off' are valid attributes")
 
@@ -190,6 +192,9 @@ def readSensors():
 
 HVAC.state = "OFF"
 THERMOSTAT.state = "HEAT"
+
+# Turn everything off
+turnOnOff("heat", "off")
 
 while True:
 	while THERMOSTAT.state == "HEAT":
