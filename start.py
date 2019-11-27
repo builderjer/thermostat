@@ -177,8 +177,6 @@ def turnOnOff(heatCool, onOff):
 	else:
 		raise AttributeError("Only 'on' or 'off' are valid attributes")
 
-	HVAC.setHeatState()
-
 def setOutput(temp):
 	if SETTINGS["OUTPUT_FORMAT"] == "F":
 		temp = (temp * 1.8) + 32
