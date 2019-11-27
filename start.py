@@ -33,11 +33,6 @@ args = parser.parse_args()
 
 # Define some global variables
 CONFIG_FILE = Path(sys.path[0]).joinpath("config/default.json")
-<<<<<<< HEAD
-
-#CONFIG_FILE = "config/default.json"
-=======
->>>>>>> unstable
 
 # Get the default settings
 SETTINGS = {}
@@ -201,35 +196,8 @@ THERMOSTAT.state = "HEAT"
 # Turn everything off
 turnOnOff("heat", "off")
 
-<<<<<<< HEAD
-HVAC.turnHeatOff()
-#HVAC.turnCoolOff()
-
 # Main loop
-while True:
-	houseTemp = THERMOSTAT.getTemp("house")
-	if round(houseTemp) > SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
-	#if round(houseTemp) > IDEALTEMP:
-	#	if HVAC.heat == 1:
-		LOGGER.debug(HVAC.heat)
-		HVAC.turnHeatOff()
-	if round(houseTemp) < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
-	#if round(houseTemp) < IDEALTEMP:
-	#	if HVAC.heat == 0:
-		LOGGER.debug(HVAC.heat)
-		HVAC.turnHeatOn()
-			
-	LOGGER.debug(HVAC.heat)
-	if args.verbose:
-		print("heat is {}".format(HVAC.heat))
-		print("house temp is {}".format(houseTemp))
-		print("hallway: {}".format(THERMOSTAT.getTemp("hallway")))
-		print("masterbed: {}".format(THERMOSTAT.getTemp("masterbed")))
-		print("livingroom: {}".format(THERMOSTAT.getTemp("livingroom")))
-	time.sleep(30)
-	
-board.shutdown()
-=======
+
 while True:
 	while THERMOSTAT.state == "HEAT":
 		while HVAC.state == "OFF":
@@ -282,6 +250,3 @@ while True:
 			pass
 		while HVAC.state == "COOLING":
 			pass
-
-
->>>>>>> unstable
