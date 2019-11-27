@@ -22,34 +22,35 @@
 				"TIME_TWO"			: [730, 1830, 0],
 				"TIME_THREE"		: [1830, 2030, 2],
 				"TIME_FOUR"		: [2030, 600, 0]
-			},
+				},
 			"NAMED_SETTINGS"	: {
 				"HOME"				: [0, 0, 1],
 				"AWAY"				: [0, 0, -3]
-			}
-		},
-		"SUMMER"					: {
-			"DEFAULT_TEMP"		: 76,
-			"TIME_SETTINGS"		: {
-				"TIME_ONE"			: [600, 730, -2],
-				"TIME_TWO"			: [730, 1830, 0],
-				"TIME_THREE"		: [1830, 2030, -2],
-				"TIME_FOUR"		: [2030, 600, 0]
-				},
-			"NAMED_SETTINGS"	: {
-				"HOME"				: [0, 0, -2],
-				"AWAY"				: [0, 0, 3]
 				}
-			}
-		},
-	"HVAC"								: {
-		"CONTROL_PINS"			: {
-			"HEAT_OFF"				: 5,
-			"HEAT_ON"				: 2,
-			"COOL_OFF"				: 6,
-			"COOL_ON"				: 3,
-			"HEAT_SENSE"			: 4,
-			"COOL_SENSE"			:7
-			}
-		}
-	}
+			},
+			"SUMMER"					: {
+				"DEFAULT_TEMP"		: 76,
+				"TIME_SETTINGS"		: {
+					"TIME_ONE"			: [600, 730, -2],
+					"TIME_TWO"			: [730, 1830, 0],
+					"TIME_THREE"		: [1830, 2030, -2],
+					"TIME_FOUR"		: [2030, 600, 0]
+					},
+				"NAMED_SETTINGS"	: {
+					"HOME"				: [0, 0, -2],
+					"AWAY"				: [0, 0, 3]
+					}
+				}
+				},
+				"HVAC"								: {
+					"CONTROL_PINS"			: {
+						"HEAT_OFF"				: 5,
+						"HEAT_ON"				: 2,
+						"COOL_OFF"				: 6,
+						"COOL_ON"				: 3,
+						"HEAT_SENSE"			: 4,
+						"COOL_SENSE"			:7
+						}
+					}
+					}
+

@@ -47,15 +47,18 @@ class TempSensor:
 		return self._tempC
 	
 	@tempC.setter
-	def tempC(self, dataList):
+	def tempC(self, rawValue):
 		"""
+		
 		dataList => A two value touple containing the sensor type and raw value
 				from the sensor
 		"""
-
-		self.LOGGER.debug("Setting tempC with dataList {}".format(dataList))
-		if dataList[0] == "LM35":
-			self._tempC = dataList[1] * 0.48828125
+		
+		self.LOGGER.debug("Setting tempC with rawValue {}".format(rawValue))
+		if self.moduleType == "LM35":
+			self._tempC = rawValue * 0.48828125
+		#if dataList[0] == "LM35":
+			#self._tempC = dataList[1] * 0.48828125
 		else:
 			self._tempC = None
 
