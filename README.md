@@ -1,5 +1,6 @@
 # Personal Thermostat
 Idea of building a smart thermostat with a raspberry pi or arduino.  Either way, it needs the same interfaces and such.
+54&#xb0
 
 ## Basic Concept
 Use a raspberry pi or an arduino or a combination of several to provide a "Smart Thermostat" for my home.
