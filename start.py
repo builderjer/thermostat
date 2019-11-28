@@ -157,25 +157,31 @@ def turnOnOff(heatCool, onOff):
 	onOff => Turn the HVAC on or off
 		Valid entrys -- "on"  "off"
 	"""
+	LOGGER.debug("in turnOnOff: {}  {}".format(heatCool, onOff))
 	if heatCool.upper() == "HEAT":
 		hc = HVAC.heatControl
+		#HVAC.state = heatCool.upper()
 	elif heatCool.upper() == "COOL":
 		hc = HVAC.coolControl
+		#HVAC.state = heatCool.upper()
 	else:
 		raise AttributeError("Only 'heat' and 'cool' are valid attributes")
+
+	if onOff.upper() == "OFF":
+		HVAC.state = "OFF"
+	else:
+		HVAC.state = heatCool.upper()
 
 	if onOff.upper() == "ON":
 		board.digital_write(hc[0], 1)
 		board.sleep(0.1)
 		board.digital_write(hc[0], 0)
 		board.sleep(0.1)
-		LOGGER.info("Turned heat on")
 	elif onOff.upper() == "OFF":
 		board.digital_write(hc[1], 1)
 		board.sleep(0.1)
 		board.digital_write(hc[1], 0)
 		board.sleep(0.1)
-		LOGGER.info("Turned heat off")
 	else:
 		raise AttributeError("Only 'on' or 'off' are valid attributes")
 
@@ -190,11 +196,11 @@ def readSensors():
 		THERMOSTAT.tempSensors[sensor].tempC = board.analog_read(THERMOSTAT.tempSensors[sensor].controlPin)
 		LOGGER.debug(THERMOSTAT.tempSensors[sensor].tempC)
 
-HVAC.state = "OFF"
 THERMOSTAT.state = "HEAT"
 
 # Turn everything off
 turnOnOff("heat", "off")
+
 
 # Main loop
 
@@ -202,43 +208,37 @@ while True:
 	while THERMOSTAT.state == "HEAT":
 		while HVAC.state == "OFF":
 			# Get the readings from the sensors
-			for sensor in THERMOSTAT.tempSensors:
-				THERMOSTAT.tempSensors[sensor].tempC = board.analog_read(THERMOSTAT.tempSensors[sensor].controlPin)
+			readSensors()
 			# Get the average temp of the house
 			houseTemp = setOutput(THERMOSTAT.getTemp("HOUSE"))
 			# Use round to keep the temp +- 0.5 deg
+			print("state off:  {}".format(round(houseTemp)))
 			if round(houseTemp) < SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
+				print("turn heat on")
 				# It's cold, turn the heater on
-				# Check and make sure the HVAC is in "OFF" state
-				if HVAC.setHeatState():
-				#if HVAC.turnHeatOn():
-					try:
-						turnOnOff("heat", "on")
-					except AttributeError:
-						# Put log entry here
-						pass
-					except Exception as e:
-						LOGGER.error("Could not change HVAC state.  {}".format(e))
+				try:
+					turnOnOff("heat", "on")
+				except AttributeError:
+					# Put log entry here
+					pass
+				except Exception as e:
+					LOGGER.error("Could not change HVAC state.  {}".format(e))
 			board.sleep(15)
-		while HVAC.state == "HEATING":
+		while HVAC.state == "HEAT":
 			# The heater is on, check to see if the temp is warm enough
-			for sensor in THERMOSTAT.tempSensors:
-				THERMOSTAT.tempSensors[sensor].tempC = board.analog_read(THERMOSTAT.tempSensors[sensor].controlPin)
+			readSensors()
 			# Get the average temp of the house
 			houseTemp = setOutput(THERMOSTAT.getTemp("HOUSE"))
 			# Use round to keep the temp +- 0.5 deg
 			if round(houseTemp) > SETTINGS["TEMP_SETTINGS"]["DEFAULT_TEMP"]:
 				# Warm enough, turn the heater off
-				if HVAC.setHeatState():
-				#if HVAC.turnHeatOff:
-					try:
-						turnOnOff("heat", "off")
-						#HVAC.setHeatState()
-					except AttributeError:
-						# Put log entry here
-						pass
-					except Exception as e:
-						LOGGER.error("Could not change HVAC state.  {}".format(e))
+				try:
+					turnOnOff("heat", "off")
+				except AttributeError:
+					# Put log entry here
+					pass
+				except Exception as e:
+					LOGGER.error("Could not change HVAC state.  {}".format(e))
 			board.sleep(15)
 
 	while THERMOSTAT.state == "COOL":
@@ -248,5 +248,5 @@ while True:
 		board.set_pin_mode(HVAC.heatControl[2], Constants.INPUT)
 		while HVAC.state == "OFF":
 			pass
-		while HVAC.state == "COOLING":
+		while HVAC.state == "COOL":
 			pass

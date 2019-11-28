@@ -3,7 +3,7 @@ import sys
 
 LOGGER = logging.getLogger("__main__.hvac.py")
 
-STATES = ["OFF", "HEATING", "COOLING"]
+STATES = ["OFF", "HEAT", "COOL"]
 
 class HVAC:
 	def __init__(self):
@@ -51,42 +51,43 @@ class HVAC:
 			self._state = state
 		else:
 			self._state = "OFF"
+		self.LOGGER.info("HVAC state set to {}".format(self.state))
 
-	def setHeatState(self):
-		if self.state == "OFF":
-			self.state = "HEATING"
-			self.LOGGER.info("HVAC state set to {}".format(self.state))
-			return self.state
-		if self.state == "HEATING":
-			self.state = "OFF"
-			self.LOGGER.info("HVAC state set to {}".format(self.state))
-			return self.state
-		else:
-			return False
+	#def setHeatState(self):
+		#if self.state == "OFF":
+			#self.state = "HEAT"
+			#self.LOGGER.info("HVAC state set to {}".format(self.state))
+			#return self.state
+		#if self.state == "HEAT":
+			#self.state = "OFF"
+			#self.LOGGER.info("HVAC state set to {}".format(self.state))
+			#return self.state
+		#else:
+			#return False
 
-	def setCoolState(self, dataList):
-		self.LOGGER.debug("in setCoolState")
-		if dataList[0] == self.coolControl[2]:
-			if dataList[1]:
-				self.state = "COOLING"
-			else:
-				self.state = "OFF"
-			self.LOGGER.info("HVAC state set to {}".format(self.state))
-			return
+	#def setCoolState(self, dataList):
+		#self.LOGGER.debug("in setCoolState")
+		#if dataList[0] == self.coolControl[2]:
+			#if dataList[1]:
+				#self.state = "COOL"
+			#else:
+				#self.state = "OFF"
+			#self.LOGGER.info("HVAC state set to {}".format(self.state))
+			#return
 
-	def turnHeatOn(self):
-		"""
-		"""
-		if self.state == "OFF":
-			return True
-		else:
-			return False
+	#def turnHeatOn(self):
+		#"""
+		#"""
+		#if self.state == "OFF":
+			#return True
+		#else:
+			#return False
 
-	def turnHeatOff(self):
-		if self.state == "HEATING":
-			return True
-		else:
-			return False
+	#def turnHeatOff(self):
+		#if self.state == "HEAT":
+			#return True
+		#else:
+			#return False
 
 	#def changeHeatState(self, onOff):
 		#"""
@@ -95,14 +96,14 @@ class HVAC:
 		#"""
 		#if onOff.upper() == "OFF":
 			#if self.state
-	def turnCoolOn(self):
-		if self.state == "OFF":
-			return True
-		else:
-			return False
+	#def turnCoolOn(self):
+		#if self.state == "OFF":
+			#return True
+		#else:
+			#return False
 
-	def turnCoolOff(self):
-		if self.state == "COOLING":
-			return True
-		else:
-			return False
+	#def turnCoolOff(self):
+		#if self.state == "COOL":
+			#return True
+		#else:
+			#return False

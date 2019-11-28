@@ -8,7 +8,7 @@ __version__ = "0.1.2"
 
 import logging
 
-LOGGER = logging.getLogger("__main__.  sensors.py")
+LOGGER = logging.getLogger("__main__.sensors.py")
 
 class TempSensor:
 	"""
@@ -18,42 +18,42 @@ class TempSensor:
 		"""
 		<string> moduleType => type of sensor (LM35, etc...)
 			It is required because each sensor uses a different forumla to determine the temp
-			
+
 		<int> controlPin => The pin on the microcontroller the sensor is connected to.
 		"""
 		self.LOGGER = logging.getLogger("__main__.  sensors.TempSensor")
 		self.LOGGER.debug("Created TempSensor with moduleType {} and controlPin {}".format(moduleType, controlPin))
-		
+
 		self.moduleType = moduleType.upper()
-		
+
 		if type(controlPin) == int:
 			self._controlPin = controlPin
 		else:
 			self._controlPin = None
-		
+
 		self._tempC = None
-		
+
 	@property
 	def controlPin(self):
 		return self._controlPin
-	
+
 	@controlPin.setter
 	def controlPin(self, pinNumber):
 		self.LOGGER.debug("Setting controlPin number {}".format(pinNumber))
 		self._controlPin = pinNumber
-	
+
 	@property
 	def tempC(self):
 		return self._tempC
-	
+
 	@tempC.setter
 	def tempC(self, rawValue):
 		"""
-		
+
 		dataList => A two value touple containing the sensor type and raw value
 				from the sensor
 		"""
-		
+
 		self.LOGGER.debug("Setting tempC with rawValue {}".format(rawValue))
 		if self.moduleType == "LM35":
 			self._tempC = rawValue * 0.48828125
@@ -68,4 +68,4 @@ class PhotoSensor:
 	"""
 	def __init__(self, controlPin):
 		self.controlPin = controlPin
-	
+
