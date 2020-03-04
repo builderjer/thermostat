@@ -2,19 +2,25 @@
 	"MIN_VERSION"				: "0.0.3",
 	"USER_DIR"						: ".config/thermostat",
 	"USER_CONFIG"				: "thermostat.json",
+	"MQTT"						: {
+		"PATH"						: "ziggy/temperature",
+		"HOST"						: "ziggyserver.brodiehome",
+		"PORT"						: "8884",
+		"USER"						: "ziggy",
+		"PASSWORD"					: "ziggy"
+			},
 	"OUTPUT_FORMAT"			: "F",
 	"DEFAULT_STATE"			: "OFF",
 	"DEFAULT_MODE"			: "AUTO",
 	"SENSORS"						: {
 		"HALLWAY"					: ["LM35", 3],
-		"MASTERBED"				: ["LM35", 4],
+		"MASTERBED"					: ["LM35", 4],
 		"LIVINGROOM"				: ["LM35", 5]
 		},
 	"SENSOR_GROUPS"			: {
 		"HOUSE"						: ["HALLWAY", "MASTERBED", "LIVINGROOM"]
 			},
 	"TEMP_SETTINGS"			: {
-		"DEFAULT_TEMP"			: 68,
 		"WINTER"						: {
 			"DEFAULT_TEMP"		: 68,
 			"TIME_SETTINGS"		: {
@@ -28,29 +34,29 @@
 				"AWAY"				: [0, 0, -3]
 				}
 			},
-			"SUMMER"					: {
-				"DEFAULT_TEMP"		: 76,
-				"TIME_SETTINGS"		: {
-					"TIME_ONE"			: [600, 730, -2],
-					"TIME_TWO"			: [730, 1830, 0],
-					"TIME_THREE"		: [1830, 2030, -2],
-					"TIME_FOUR"		: [2030, 600, 0]
-					},
-				"NAMED_SETTINGS"	: {
-					"HOME"				: [0, 0, -2],
-					"AWAY"				: [0, 0, 3]
-					}
-				}
+		"SUMMER"					: {
+			"DEFAULT_TEMP"		: 76,
+			"TIME_SETTINGS"		: {
+				"TIME_ONE"			: [600, 730, -2],
+				"TIME_TWO"			: [730, 1830, 0],
+				"TIME_THREE"		: [1830, 2030, -2],
+				"TIME_FOUR"		: [2030, 600, 0]
 				},
-				"HVAC"								: {
-					"CONTROL_PINS"			: {
-						"HEAT_OFF"				: 5,
-						"HEAT_ON"				: 2,
-						"COOL_OFF"				: 6,
-						"COOL_ON"				: 3,
-						"HEAT_SENSE"			: 4,
-						"COOL_SENSE"			:7
-						}
-					}
-					}
+			"NAMED_SETTINGS"	: {
+				"HOME"				: [0, 0, -2],
+				"AWAY"				: [0, 0, 3]
+				}
+			}
+		},
+	"HVAC"								: {
+		"CONTROL_PINS"			: {
+			"HEAT_OFF"				: 5,
+			"HEAT_ON"				: 2,
+			"COOL_OFF"				: 6,
+			"COOL_ON"				: 3,
+			"VENT_OFF"				: 4,
+			"VENT_ON"				: 7
+		}
+	}
+}
 

@@ -15,7 +15,7 @@ import argparse
 import sys
 import os
 from pathlib import Path
-from signal import signal as sig
+import signal
 
 # Create a Logger
 LOGGER = logging.getLogger(__name__)
@@ -24,20 +24,25 @@ LOGGER.setLevel(logging.DEBUG)
 # Global variables
 CONFIG_FILE = Path(sys.path[0]).joinpath("config/default.json")
 LOG_FILE = Path("/var/tmp/thermostat/thermostat.log")
+DEFAULT_PORT = "/dev/ttyACM0"
 SETTINGS = {}
 ERROR = None
+
 # Set up the parser
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", action="store_true", help="Save a backup of the previous logfile")
+parser.add_argument("-p", action="store", help="Specify a single port to use on a single PyMata board", default=DEFAULT_PORT)
 parser.add_argument("-v", action="count", help="Increase verbosity output")
 parser.add_argument("--config", action="store", help="/path/to/custom/config.json", default=CONFIG_FILE)
 parser.add_argument("--debug", action="store_true", help="Output debuging symbols")
 parser.add_argument("--log", action="store", help="/path/to/logfile/location.log", default=LOG_FILE)
+#parser.add_argument("--ports", action="store", help="A comma seperated list of dev ports to attach boards too", default=None)
 args = parser.parse_args()
 
 # Parse the arguments if there are any
 # Run the parser in sections so that items can be created when needed
 
+# TODO:  Possibly make the logger config from file
 # Logger output
 if Path(args.log).exists():
 	LOGGER.warning("Log file exists")
@@ -86,6 +91,7 @@ if args.v:
 		CONSOLE_LOGGER.setLevel(logging.DEBUG)
 
 	LOGGER.addHandler(CONSOLE_LOGGER)
+LOGGER.info("Log file configured")
 
 # Configuration File - CONFIG_FILE
 
@@ -97,6 +103,7 @@ if args.v:
 try:
 	with open(CONFIG_FILE, "r") as config:
 		SETTINGS = json.load(config)
+		LOGGER.debug("Default config:  {}\n{}".format(CONFIG_FILE, SETTINGS))
 except ValueError as e:
 	LOGGER.error("The main config file {} has an error.  Check and retry.  {}".format(str(CONFIG_FILE), e))
 	sys.exit()
@@ -109,6 +116,7 @@ if defaultUserConfig.exists():
 			defaultUserConfig = json.load(uConfig)
 		for setting, value in defaultUserConfig.items():
 			SETTINGS[setting] = value
+		LOGGER.debug("User config:  {}\n{}".format(defaultUserConfig, SETTINGS))
 	except ValueError as e:
 		LOGGER.warning("{} is not a valid json file.  Configuration will be ignored.  {}".format(str(defaultUserConfig), e))
 else:
@@ -118,6 +126,7 @@ else:
 		s = {"MIN_VERSION": SETTINGS["MIN_VERSION"]}
 		with open(defaultUserConfig, "w") as uConfig:
 			json.dump(s, uConfig, indent=4)
+		LOGGER.debug("No user config found.  Creating default at {}".format(defaultUserConfig))
 	except Exception as e:
 		LOGGER.warning("Could not create default user config file.  {}".format(e))
 
@@ -128,13 +137,60 @@ if args.config and Path(args.config).exists():
 			clineConfig = json.load(config)
 		for setting, value in clineConfig.items():
 			SETTINGS[setting] = value
+		LOGGER.debug("Command Line config file loaded from {}\n{}".format(args.config, SETTINGS))
 	except ValueError:
 		LOGGER.warning("{} is not a valid json file.  Falling back to default".format(args.config))
 else:
-	LOGGER.warning("Could not read {}.  Check path and formatting".format(args.config))
+	LOGGER.warning("Could not load {}.  Check path and formatting".format(args.config))
 
 # Check for required version of config file
-if SETTINGS["MIN_VERSION"] > __version__:
+if SETTINGS["MIN_VERSION"] >= __version__:
 	LOGGER.error("Update your configuration file to version {} to run this script".format(__version__))
 	sys.exit()
 LOGGER.info("Configuration loaded")
+
+# Configuration and logging loaded.  Time to continue
+
+# If a port on the command line is specified, set it as the DEFAULT_PORT
+if (args.p):
+	DEFAULT_PORT = args.p
+
+import hvac
+
+HVAC = hvac.HVAC(DEFAULT_PORT)
+HVAC.heater = hvac.Heater(HVAC.board, [SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_ON"]])
+HVAC.ac = hvac.AirConditioner(HVAC.board, [SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_ON"]])
+HVAC.vent = hvac.Vent(HVAC.board, [SETTINGS["HVAC"]["CONTROL_PINS"]["VENT_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["VENT_ON"]])
+HVAC.thermostat = hvac.Thermostat(HVAC.board)
+
+# Add the sensors to the Thermostat
+if SETTINGS["SENSORS"]:
+	for area, sensor in SETTINGS["SENSORS"].items():
+		HVAC.thermostat.addSensor(TempSensor(area, sensor[0], sensor[1]))
+else:
+	LOGGER.error("Must have sensors configured to work.  Exiting")
+	sys.exit()
+
+if SETTINGS["SENSOR_GROUPS"]:
+	for groupName, sensorNames in SETTINGS["SENSOR_GROUPS"].items():
+		HVAC.thermostat.createSensorGroup(groupName)
+		for sensor in sensorNames:
+			HVAC.thermostat.addSensorToGroup(sensor)
+
+# Set up MQTT information if avaliable
+if SETTINGS["MQTT"]:
+	HVAC.thermostat.mqtt = SETTINGS["MQTT"]
+
+# Set up the signal handler for Ctrl-C shutdown
+def shutdown(sig, frame):
+	if HVAC.board:
+		HVAC.board.shutdown()
+	sys.exit()
+signal.signal(signal.SIGTERM, shutdown)
+signal.signal(signal.SIGINT, shutdown)
+
+# Make sure everything is turned off before starting main loop
+HVAC.changeHeatState("OFF")
+HVAC.changeACState("OFF")
+HVAC.changeVentState("OFF")
+
