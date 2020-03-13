@@ -156,6 +156,7 @@ if (args.p):
 	DEFAULT_PORT = args.p
 
 import hvac
+import sensors
 
 HVAC = hvac.HVAC(DEFAULT_PORT)
 HVAC.heater = hvac.Heater(HVAC.board, [SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_ON"]])
@@ -166,7 +167,7 @@ HVAC.thermostat = hvac.Thermostat(HVAC.board)
 # Add the sensors to the Thermostat
 if SETTINGS["SENSORS"]:
 	for area, sensor in SETTINGS["SENSORS"].items():
-		HVAC.thermostat.addSensor(TempSensor(area, sensor[0], sensor[1]))
+		HVAC.thermostat.addSensor(sensors.TempSensor(area, sensor[0], sensor[1]))
 else:
 	LOGGER.error("Must have sensors configured to work.  Exiting")
 	sys.exit()
@@ -181,6 +182,11 @@ if SETTINGS["SENSOR_GROUPS"]:
 if SETTINGS["MQTT"]:
 	HVAC.thermostat.mqtt = SETTINGS["MQTT"]
 
+# Set up the presence detector
+if SETTINGS["PRESENCE"]:
+	OCCUPIED = sensors.PresenceDetector()
+	OCCUPIED.addresses = SETTINGS["PRESENCE"]
+
 # Set up the signal handler for Ctrl-C shutdown
 def shutdown(sig, frame):
 	if HVAC.board:
@@ -193,4 +199,9 @@ signal.signal(signal.SIGINT, shutdown)
 HVAC.changeHeatState("OFF")
 HVAC.changeACState("OFF")
 HVAC.changeVentState("OFF")
+
+def start():
+	OCCUPIED.homeList = OCCUPIED.addresses
+	print(OCCUPIED.homeList)
+
 

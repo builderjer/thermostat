@@ -1,9 +1,24 @@
+"""
+hvac.py -- A set of classes designed for a simple HVAC system.
+
+To be a complete HVAC system, it should have a heating system, cooling system,
+and a vent.  All of these need a thermostat to control all of these.
+
+Each one of these elements have thier own class, and should be created as a
+property of a HVAC object.
+
+These classes are designed to be run with an Arduino running PyMata found at
+https://github.com/MrYsLab/pymata-aio.  The main script can be run from any
+machine that can interface with the said Arduino.
+"""
+
 import logging
 import sys
+import datetime
 
 LOGGER = logging.getLogger("__main__.hvac.py")
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # HVAC is controlled by an Arduino board with PyMata installed
 try:
@@ -23,19 +38,48 @@ except ModuleNotFoundError:
 	LOGGER.warning("Package paho-mqtt is not installed.  MQTT communication will be disabled")
 
 class Thermostat:
-	def __init__(self, board, mqtt=None):
+	"""
+	class Thermostat => The main control class for the HVAC object
+
+	This class does everything from getting the temperature of the house, to
+	publishing the results to a mqtt broker.
+
+	This is where the "Smart Stuff" happens
+	"""
+	def __init__(self, board, mqtt=None, tempSettings=None):
+		"""
+		board => Only required argument.  It is an initiated Arduino board with PyMata.
+		mqtt => Optional => A dictionary contaning all of the required settings to connect
+			with a mqtt broker.
+		tempSettings => Maybe shoud be required but optional for now. => A dictionary of
+			times and conditions to modify the temperature to keep the area at.
+
+		properties:
+
+		board => Arduino PyMata board
+		tempSettings => Dictionary of times to modify the temperature
+		modes => AUTO or MANUAL => When in AUTO, all temperatures are automaticaly controlled.
+			When in MANUAL, it will run the HVAC for 2 cycles at that setting and then return
+			to AUTO mode.
+		tempSensors => A list of temperature sensors to use for various inputs
+		groups => A set of tempSensors that are grouped as one single ententy
+		_mqtt => MQTT connection settings
+
+		"""
 		self.LOGGER = logging.getLogger("__main__.hvac.Thermostat")
 
 		self.board = board
 		self._mqtt = mqtt
+		self.tempSettings = tempSettings
 
 		self.modes = ["AUTO", "MANUAL"]
-		self._mode = self.modes["AUTO"]
+		self._mode = "AUTO"
 
 		self.tempSensors = []
 		self.groups = {}
 
 		self._desiredTemp = None
+		self._occupied = None
 
 	@property
 	def mode(self):
@@ -55,7 +99,40 @@ class Thermostat:
 
 	@desiredTemp.setter
 	def desiredTemp(self, temp):
-		self._desiredTemp = temp
+		if temp:
+			self.mode = "MANUAL"
+			self._desiredTemp = temp
+			return
+		try:
+			currnet = datetime.datetime.now()
+			if currnet.month >= 11 or currnet.month <= 3:
+				tempDict = self.tempSettings["WINTER"]
+			elif currnet.month >= 7 or currnet.month <= 9:
+				tempDict = self.tempSettings["SUMMER"]
+			else:
+				self._desiredTemp = None
+				return
+			startTemp = tempDict.pop("DEFAULT_TEMP")
+			modList = []
+			try:
+				occupiedSettings = tempDict.pop("OCCUPIED_SETTINGS")
+				if self.occupied:
+					modList.extend(occupiedSettings["HOME"])
+				else:
+					modList.extend(occupiedSettings["AWAY"])
+			except KeyError:
+				pass
+			for settingType in tempDict:
+				modList.extend(tempDict[settingType].values())
+			modTemp = 0
+			for mlist in modList:
+				if self.getbetweenTime([mlist[0], mlist[1]]):
+					modTemp += mlist[2]
+			self._desiredTemp = startTemp + modTemp
+
+		except KeyError as e:
+			self.LOGGER.info("No temp modifications")
+			self._desiredTemp = temp
 
 	@property
 	def mqtt(self):
@@ -67,6 +144,17 @@ class Thermostat:
 			self._mqtt = mqtt_variables
 		else:
 			self._mqtt = None
+
+	@property
+	def occupied(self):
+		return self._occupied
+
+	@occupied.setter
+	def occupied(self, homeList):
+		if homeList:
+			self._occupied = True
+		else:
+			self._occupied = False
 
 	def addSensor(self, sensor):
 		if sensor not in self.tempSensors:
@@ -136,6 +224,50 @@ class Thermostat:
 				mqtt_pub.single(topic, payload=temp, qos=1, retain=True, hostname=self.mqtt["HOST"], port=int(self.mqtt["PORT"]), auth={"username": self.mqtt["USER"], "password": self.mqtt["PASSWORD"]})
 		else:
 			self.LOGGER.warning("MQTT is either not enabled, or not setup correct")
+
+	#def getTimeOfYear(self):
+		#currnet = datetime.datetime.now()
+		#if currnet.month >= 11 or currnet.month <= 3:
+			#return "WINTER"
+		#if currnet.month >= 7 or currnet.month <= 9:
+			#return "SUMMER"
+		#else:
+			#return None
+
+	def getBetweenTime(self, timeList):
+		"""
+		timeList => 2 - 4 digit string in 24 hr time format
+				ex:		["startTime", "endTime"]
+				ex:		["0600", "0930"] 6:00 am to 9:30 am
+				ex:		["0", "0"] all 24 hours
+		"""
+		if int(timeList[0]) == 0 or int(timeList[1]) == 0:
+			return True
+
+		now = datetime.datetime.now()
+		startHour = int(timeList[0][:2])
+		startMinute = int(timeList[0][2:])
+		endHour = int(timeList[1][:2])
+		endMinute = int(timeList[1][2:])
+
+		if now.hour >= startHour and now.minute >= startMinute:
+			if now.hour <= endHour and now.minute < endMinute:
+				return True
+		return False
+
+	#def setMod(self, modList):
+		#"""
+		#modList =>  A list of either tuples or lists with exactly 3 elements
+
+				#[(startTime1, endTime1, modValue1), [startTime2, endTime2, modValue2]]
+		#"""
+		#modTemp = 0
+
+		#for l in modList:
+			#if self.getBetweenTime([l[0], l[1]]):
+				#modTemp += l[2]
+
+		#return modTemp
 
 class Heater:
 	def __init__(self, board, controlPins):

@@ -7,6 +7,7 @@ __author__ = "builderjer"
 __version__ = "0.1.2"
 
 import logging
+import subprocess
 
 LOGGER = logging.getLogger("__main__.sensors.py")
 
@@ -92,6 +93,43 @@ class TempSensor(Sensor):
 			return (self.tempC * 1.8) + 32
 		else:
 			return None
+
+class PresenceDetector:
+	"""
+	A Class to try and determine if there is anybody in the house.  For now,
+		it only uses a simple wifi ping.
+
+	Must have static IP addresses assigned to the phones or devices used.
+	Must have the setting for the IP address also
+	"""
+	def __init__(self):
+		self.LOGGER = logging.getLogger("__main__.sensors.PresenceDetector")
+		self.addresses = {}
+		self._homeList = []
+
+	@property
+	def homeList(self):
+		return self._homeList
+
+	@homeList.setter
+	def homeList(self, addressList):
+		tempList = []
+		for name in self.addresses:
+			try:
+				# NOTE: This only works on Linux...For now
+				if subprocess.check_output(["ping", "-c", "1", self.addresses[name]]):
+					tempList.append(name)
+			except subprocess.CalledProcessError as e:
+				self.LOGGER.info("{} at {} not reachable".format(name, self.addresses[name]))
+		self._homeList = tempList
+
+	def addAddress(self, name, address):
+		if name not in self.addresses:
+			self.addresses[name] = address
+
+	def removeAddress(self, name):
+		if name in self.addresses:
+			del self.addresses[name]
 
 #class PhotoSensor:
 	#"""

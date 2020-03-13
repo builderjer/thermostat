@@ -22,29 +22,29 @@
 			},
 	"TEMP_SETTINGS"			: {
 		"WINTER"						: {
-			"DEFAULT_TEMP"		: 68,
+			"DEFAULT_TEMP"		: 66,
 			"TIME_SETTINGS"		: {
-				"TIME_ONE"			: [600, 730, 2],
-				"TIME_TWO"			: [730, 1830, 0],
-				"TIME_THREE"		: [1830, 2030, 2],
-				"TIME_FOUR"		: [2030, 600, 0]
+				"TIME_ONE"			: ["0600", "0730", 2],
+				"TIME_TWO"			: ["0730", "1830", 0],
+				"TIME_THREE"		: ["1830", "2030", 2],
+				"TIME_FOUR"		: ["2030", "0600", 0]
 				},
-			"NAMED_SETTINGS"	: {
-				"HOME"				: [0, 0, 1],
-				"AWAY"				: [0, 0, -3]
+			"OCCUPIED_SETTINGS"	: {
+				"HOME"				: ["0", "0", 1],
+				"AWAY"				: ["0", "0", -3]
 				}
 			},
 		"SUMMER"					: {
 			"DEFAULT_TEMP"		: 76,
 			"TIME_SETTINGS"		: {
-				"TIME_ONE"			: [600, 730, -2],
-				"TIME_TWO"			: [730, 1830, 0],
-				"TIME_THREE"		: [1830, 2030, -2],
-				"TIME_FOUR"		: [2030, 600, 0]
+				"TIME_ONE"			: ["0600", "0730", -2],
+				"TIME_TWO"			: ["0730", "1830", 0],
+				"TIME_THREE"		: ["1830", "2030", -2],
+				"TIME_FOUR"		: ["2030", "0600", 0]
 				},
 			"NAMED_SETTINGS"	: {
-				"HOME"				: [0, 0, -2],
-				"AWAY"				: [0, 0, 3]
+				"HOME"				: ["0", "0", -2],
+				"AWAY"				: ["0", "0", 3]
 				}
 			}
 		},
@@ -57,6 +57,11 @@
 			"VENT_OFF"				: 4,
 			"VENT_ON"				: 7
 		}
-	}
+	},
+	"PRESENCE"					: {
+		"JEREMY"					: "192.168.0.101",
+		"MELISSA"					: "192.168.0.143",
+		"ANTHONY"					: "192.168.0.217"
+		}
 }
 
