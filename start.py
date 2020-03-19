@@ -200,7 +200,7 @@ THERMOSTAT.state = "HEAT"
 
 # Turn everything off
 turnOnOff("heat", "off")
-
+turnOnOff("cool", "off")
 
 # Main loop
 
