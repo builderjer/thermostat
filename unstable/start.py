@@ -16,6 +16,7 @@ import sys
 import os
 from pathlib import Path
 import signal
+import time
 
 # Create a Logger
 LOGGER = logging.getLogger(__name__)
@@ -162,11 +163,12 @@ HVAC = hvac.HVAC(DEFAULT_PORT)
 HVAC.heater = hvac.Heater(HVAC.board, [SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["HEAT_ON"]])
 HVAC.ac = hvac.AirConditioner(HVAC.board, [SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["COOL_ON"]])
 HVAC.vent = hvac.Vent(HVAC.board, [SETTINGS["HVAC"]["CONTROL_PINS"]["VENT_OFF"], SETTINGS["HVAC"]["CONTROL_PINS"]["VENT_ON"]])
-HVAC.thermostat = hvac.Thermostat(HVAC.board)
+HVAC.thermostat = hvac.Thermostat(HVAC.board, tempSettings=SETTINGS["TEMP_SETTINGS"])
 
 # Add the sensors to the Thermostat
 if SETTINGS["SENSORS"]:
 	for area, sensor in SETTINGS["SENSORS"].items():
+		LOGGER.debug(SETTINGS["SENSORS"].items())
 		HVAC.thermostat.addSensor(sensors.TempSensor(area, sensor[0], sensor[1]))
 else:
 	LOGGER.error("Must have sensors configured to work.  Exiting")
@@ -174,18 +176,21 @@ else:
 
 if SETTINGS["SENSOR_GROUPS"]:
 	for groupName, sensorNames in SETTINGS["SENSOR_GROUPS"].items():
+		LOGGER.debug("groupname: {}  sensorNames: {}".format(groupName, sensorNames))
 		HVAC.thermostat.createSensorGroup(groupName)
 		for sensor in sensorNames:
-			HVAC.thermostat.addSensorToGroup(sensor)
+			for s in HVAC.thermostat.tempSensors:
+				if sensor == s.name:
+					HVAC.thermostat.addSensorToGroup(s, groupName)
 
 # Set up MQTT information if avaliable
 if SETTINGS["MQTT"]:
 	HVAC.thermostat.mqtt = SETTINGS["MQTT"]
 
 # Set up the presence detector
-if SETTINGS["PRESENCE"]:
+if SETTINGS["OCCUPANCY"]:
 	OCCUPIED = sensors.PresenceDetector()
-	OCCUPIED.addresses = SETTINGS["PRESENCE"]
+	OCCUPIED.addresses = SETTINGS["OCCUPANCY"]
 
 # Set up the signal handler for Ctrl-C shutdown
 def shutdown(sig, frame):
@@ -196,12 +201,71 @@ signal.signal(signal.SIGTERM, shutdown)
 signal.signal(signal.SIGINT, shutdown)
 
 # Make sure everything is turned off before starting main loop
-HVAC.changeHeatState("OFF")
-HVAC.changeACState("OFF")
-HVAC.changeVentState("OFF")
+
+def turnAllOff():
+	HVAC.changeHeatState("OFF")
+	HVAC.changeACState("OFF")
+	#HVAC.changeVentState("OFF")
+
+def stop():
+	HVAC.board.shutdown()
 
 def start():
 	OCCUPIED.homeList = OCCUPIED.addresses
-	print(OCCUPIED.homeList)
+	HVAC.thermostat.occupied = OCCUPIED.homeList
+	HVAC.thermostat.updateSensors()
+	#for sensor in HVAC.thermostat.tempSensors:
+		#HVAC.thermostat.getTemp(sensor.name)
+	#for group in HVAC.thermostat.groups:
+		#HVAC.thermostat.getTemp(group)
+	#HVAC.thermostat.getTemp("HALLWAY")
+	#HVAC.thermostat.getTemp("MASTERBED")
+	#HVAC.thermostat.getTemp("LIVINGROOM")
+	#HVAC.thermostat.getTemp("HOUSE")
+	HVAC.thermostat.desiredTemp = None
+	roundTemp = round(HVAC.thermostat.getTemp("HOUSE"))
+	LOGGER.debug("Round temp of house {}  Desired temp of house {}".format(roundTemp, HVAC.thermostat.desiredTemp))
+	if roundTemp < HVAC.thermostat.desiredTemp:
+		LOGGER.debug("round less than desired")
+		if HVAC.thermostat.timeOfYear == "WINTER":
+			LOGGER.debug("WINTER turn heat on")
+			# To be implemented soon
+			#HVAC.changeVentState("ON")
+			#time.sleep(5)
+			HVAC.changeHeatState("ON")
+		elif HVAC.thermostat.timeOfYear == "SUMMER":
+			LOGGER.debug("SUMMER turn AC on")
+			# To be implemented soon
+			#HVAC.changeVentState("ON")
+			#time.sleep(5)
+			HVAC.changeACState("ON")
+		else:
+			turnAllOff()
+	if round(HVAC.thermostat.getTemp("HOUSE")) > HVAC.thermostat.desiredTemp:
+		LOGGER.debug("round greater than desired")
+		if HVAC.thermostat.timeOfYear == "WINTER":
+			LOGGER.debug("WINTER turn heat off")
+			HVAC.changeHeatState("OFF")
+			# To be implemented soon
+			#time.sleep(5)
+			#HVAC.changeVentState("OFF")
+		elif HVAC.thermostat.timeOfYear == "SUMMER":
+			LOGGER.debug("SUMMER turn AC off")
+			HVAC.changeACState("OFF")
+			# To be implemented soon
+			#time.sleep(5)
+			#HVAC.changeVentState("OFF")
+		else:
+			turnAllOff()
+
+	HVAC.thermostat.publish()
+	HVAC.thermostat.board.sleep(1)
+	LOGGER.debug("End of start loop")
+
+if __name__ == "__main__":
+	turnAllOff()
+	while True:
+		start()
+	stop()
 
 

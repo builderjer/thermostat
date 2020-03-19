@@ -15,6 +15,7 @@ machine that can interface with the said Arduino.
 import logging
 import sys
 import datetime
+import copy
 
 LOGGER = logging.getLogger("__main__.hvac.py")
 
@@ -78,8 +79,10 @@ class Thermostat:
 		self.tempSensors = []
 		self.groups = {}
 
+		self._defaultTemp = None
 		self._desiredTemp = None
 		self._occupied = None
+		self._timeOfYear = None
 
 	@property
 	def mode(self):
@@ -94,41 +97,56 @@ class Thermostat:
 			self.LOGGER.warning("{} is not a valid mode for this Thermostat".format(mode))
 
 	@property
+	def defaultTemp(self):
+		return self._defaultTemp
+
+	@defaultTemp.setter
+	def defaultTemp(self, temp):
+		self._defaultTemp = temp
+
+	@property
 	def desiredTemp(self):
 		return self._desiredTemp
 
 	@desiredTemp.setter
 	def desiredTemp(self, temp):
+		self.LOGGER.debug("In desiredTemp setter {}".format(temp))
 		if temp:
 			self.mode = "MANUAL"
 			self._desiredTemp = temp
 			return
 		try:
-			currnet = datetime.datetime.now()
-			if currnet.month >= 11 or currnet.month <= 3:
-				tempDict = self.tempSettings["WINTER"]
-			elif currnet.month >= 7 or currnet.month <= 9:
-				tempDict = self.tempSettings["SUMMER"]
+			tempDict = {}
+			current = datetime.datetime.now()
+			self.LOGGER.debug("current time: {}".format(current))
+			if current.month >= 11 or current.month <= 3:
+				tempDict = copy.deepcopy(self.tempSettings["WINTER"])
+				self.timeOfYear = current.month
+			elif current.month >= 7 or current.month <= 9:
+				tempDict = copy.deepcopy(self.tempSettings["SUMMER"])
+				self.timeOfYear = current.month
 			else:
 				self._desiredTemp = None
 				return
-			startTemp = tempDict.pop("DEFAULT_TEMP")
+			self.defaultTemp = tempDict.pop("DEFAULT_TEMP")
 			modList = []
 			try:
 				occupiedSettings = tempDict.pop("OCCUPIED_SETTINGS")
 				if self.occupied:
-					modList.extend(occupiedSettings["HOME"])
+					modList.append(occupiedSettings["HOME"])
 				else:
-					modList.extend(occupiedSettings["AWAY"])
+					modList.append(occupiedSettings["AWAY"])
 			except KeyError:
 				pass
 			for settingType in tempDict:
 				modList.extend(tempDict[settingType].values())
 			modTemp = 0
+			self.LOGGER.debug("modList: {}".format(modList))
 			for mlist in modList:
-				if self.getbetweenTime([mlist[0], mlist[1]]):
+				if self.getBetweenTime([mlist[0], mlist[1]], current):
 					modTemp += mlist[2]
-			self._desiredTemp = startTemp + modTemp
+			self.LOGGER.debug("defaultTemp: {}  modTemp: {}".format(self.defaultTemp, modTemp))
+			self._desiredTemp = self.defaultTemp + modTemp
 
 		except KeyError as e:
 			self.LOGGER.info("No temp modifications")
@@ -156,11 +174,28 @@ class Thermostat:
 		else:
 			self._occupied = False
 
+	@property
+	def timeOfYear(self):
+		return self._timeOfYear
+
+	@timeOfYear.setter
+	def timeOfYear(self, month):
+		if month >= 11 or month <= 3:
+			self._timeOfYear = "WINTER"
+		elif month >= 7 or month <= 9:
+			self._timeOfYear = "SUMMER"
+		else:
+			self._timeOfYear = None
+		self.LOGGER.debug(self.timeOfYear)
+
 	def addSensor(self, sensor):
 		if sensor not in self.tempSensors:
 			self.board.set_pin_mode(sensor.controlPin, Constants.ANALOG)
 			self.tempSensors.append(sensor)
 			self.LOGGER.info("Sensor {} with control pin {} added to Thermostat".format(sensor.name, sensor.controlPin))
+			self.LOGGER.debug(sensor)
+		else:
+			self.LOGGER.info("Sensor {} already added".format(sensor))
 
 	def createSensorGroup(self, groupName):
 		groupName = groupName.upper()
@@ -170,20 +205,30 @@ class Thermostat:
 
 	def addSensorToGroup(self, sensor, group):
 		if group in self.groups:
+			self.LOGGER.debug((group, sensor))
 			if sensor in self.tempSensors:
+				self.LOGGER.info(sensor.name)
 				if sensor not in self.groups[group]:
 					self.groups[group].append(sensor)
 					self.LOGGER.info("Sensor {} added to group {}".format(sensor.name, group))
 				else:
 					self.LOGGER.warning("Sensor {} is already in group {}".format(sensor.name, group))
 			else:
+				self.LOGGER.info(sensor)
 				self.LOGGER.warning("You must add the sensor {} to the Thermostat before adding to a group".format(sensor.name))
 		else:
 			self.LOGGER.warning("Group {} does not exist to add a sensor to".format(group))
 
 	def updateSensors(self):
 		for sensor in self.tempSensors:
-			sensor.tempC = self.board.analog_read(sensor.controlPin)
+			temp = 0
+			for _ in range(10):
+				#sensor.tempC = self.board.analog_read(sensor.controlPin)
+				temp += self.board.analog_read(sensor.controlPin)
+				self.LOGGER.debug("temp in updateSensors: {}".format(temp))
+				self.board.sleep(.1)
+			sensor.tempC = temp / 10
+			self.LOGGER.debug(sensor.tempC)
 			self.LOGGER.debug("Updated sensor {}".format(sensor.name))
 
 	def getTemp(self, area, tempFormat="F"):
@@ -199,7 +244,7 @@ class Thermostat:
 			return groupTemp
 
 		for sensor in self.tempSensors:
-			if area.upper() = sensor.name:
+			if area.upper() == sensor.name:
 				if tempFormat == "F":
 					temp = sensor.tempF
 				else:
@@ -214,27 +259,21 @@ class Thermostat:
 		if MQTT_ENABLED and self.mqtt:
 			# Publish each sensor temp first
 			for sensor in self.tempSensors:
-				temp = self.getTemp(sensor.name)
-				topic = "/".join(self.mqtt["PATH"], sensor.name.lower())
+				temp = round(self.getTemp(sensor.name), 1)
+				topic = "/".join((self.mqtt["PATH"], sensor.name.lower()))
 				mqtt_pub.single(topic, payload=temp, qos=1, retain=True, hostname=self.mqtt["HOST"], port=int(self.mqtt["PORT"]), auth={"username": self.mqtt["USER"], "password": self.mqtt["PASSWORD"]})
 			# Now publish the groups
 			for area in self.groups:
-				temp = self.getTemp(area)
-				topic = "/".join(self.mqtt["PATH"], area.lower())
+				temp = round(self.getTemp(area), 1)
+				topic = "/".join((self.mqtt["PATH"], area.lower()))
 				mqtt_pub.single(topic, payload=temp, qos=1, retain=True, hostname=self.mqtt["HOST"], port=int(self.mqtt["PORT"]), auth={"username": self.mqtt["USER"], "password": self.mqtt["PASSWORD"]})
+			# Publish misc stuff
+			topic = "/".join((self.mqtt["PATH"], "desired"))
+			mqtt_pub.single(topic, payload=self.desiredTemp, qos=1, retain=True, hostname=self.mqtt["HOST"], port=int(self.mqtt["PORT"]), auth={"username": self.mqtt["USER"], "password": self.mqtt["PASSWORD"]})
 		else:
 			self.LOGGER.warning("MQTT is either not enabled, or not setup correct")
 
-	#def getTimeOfYear(self):
-		#currnet = datetime.datetime.now()
-		#if currnet.month >= 11 or currnet.month <= 3:
-			#return "WINTER"
-		#if currnet.month >= 7 or currnet.month <= 9:
-			#return "SUMMER"
-		#else:
-			#return None
-
-	def getBetweenTime(self, timeList):
+	def getBetweenTime(self, timeList, currentTime):
 		"""
 		timeList => 2 - 4 digit string in 24 hr time format
 				ex:		["startTime", "endTime"]
@@ -244,30 +283,30 @@ class Thermostat:
 		if int(timeList[0]) == 0 or int(timeList[1]) == 0:
 			return True
 
-		now = datetime.datetime.now()
+		#now = datetime.datetime.now()
 		startHour = int(timeList[0][:2])
+		#self.LOGGER.debug("startHour: {}".format(startHour))
 		startMinute = int(timeList[0][2:])
+		#self.LOGGER.debug("startMinute: {}".format(startMinute))
 		endHour = int(timeList[1][:2])
+		#self.LOGGER.debug("endHour: {}".format(endHour))
 		endMinute = int(timeList[1][2:])
+		#self.LOGGER.debug("endMinute: {}".format(endMinute))
+		startTime = currentTime.replace(hour=startHour, minute=startMinute, second=0, microsecond=0)
+		endTime = currentTime.replace(hour=endHour, minute=endMinute, second=0, microsecond=0)
 
-		if now.hour >= startHour and now.minute >= startMinute:
-			if now.hour <= endHour and now.minute < endMinute:
-				return True
+		self.LOGGER.debug("Start time: {}  End time {}".format(startTime, endTime))
+
+		if startTime <= currentTime and endTime >= currentTime:
+			self.LOGGER.debug("Good Times")
+			return True
 		return False
-
-	#def setMod(self, modList):
-		#"""
-		#modList =>  A list of either tuples or lists with exactly 3 elements
-
-				#[(startTime1, endTime1, modValue1), [startTime2, endTime2, modValue2]]
-		#"""
-		#modTemp = 0
-
-		#for l in modList:
-			#if self.getBetweenTime([l[0], l[1]]):
-				#modTemp += l[2]
-
-		#return modTemp
+		#if currentTime.hour >= startHour and currentTime.minute >= startMinute:
+			#self.LOGGER.debug("Within start time")
+			#if currentTime.hour <= endHour and currentTime.minute <= endMinute:
+				#self.LOGGER.debug("Within end time")
+				#return True
+		#return False
 
 class Heater:
 	def __init__(self, board, controlPins):
@@ -282,8 +321,10 @@ class Heater:
 		self.controlPins = controlPins
 		self._state = "OFF"
 
-		for pin is self.controlPins:
+		for pin in self.controlPins:
 			self.board.set_pin_mode(pin, Constants.OUTPUT)
+
+		self.LOGGER.debug("Created Heater object")
 
 	@property
 	def state(self):
@@ -291,20 +332,22 @@ class Heater:
 
 	@state.setter
 	def state(self, onOff):
-		if onOff.upper() == "ON":
+		if onOff.upper() == "ON" and self.state == "OFF":
 			self._state = onOff
 			self.turnOn()
-		 if onOff.upper() == "OFF":
+		if onOff.upper() == "OFF" and self.state == "ON":
 			 self._state = onOff
-			 self.turnOff
+			 self.turnOff()
 
-	def turnOn(self):
+	def turnOff(self):
+		self.LOGGER.debug("In Heater turnOff")
 		self.board.digital_write(self.controlPins[0], 1)
 		self.board.sleep(0.1)
 		self.board.digital_write(self.controlPins[0], 0)
 		self.board.sleep(0.1)
 
-	def turnOff(self):
+	def turnOn(self):
+		self.LOGGER.debug("In Heater turnOn")
 		self.board.digital_write(self.controlPins[1], 1)
 		self.board.sleep(0.1)
 		self.board.digital_write(self.controlPins[1], 0)
@@ -323,8 +366,10 @@ class AirConditioner:
 		self.controlPins = controlPins
 		self._state = "OFF"
 
-		for pin is self.controlPins:
+		for pin in self.controlPins:
 			self.board.set_pin_mode(pin, Constants.OUTPUT)
+
+		self.LOGGER.debug("Created AirConditioner object")
 
 	@property
 	def state(self):
@@ -335,17 +380,19 @@ class AirConditioner:
 		if onOff.upper() == "ON":
 			self._state = onOff
 			self.turnOn()
-		 if onOff.upper() == "OFF":
+		if onOff.upper() == "OFF":
 			 self._state = onOff
-			 self.turnOff
+			 self.turnOff()
 
-	def turnOn(self):
+	def turnOff(self):
+		self.LOGGER.debug("turning off AC")
 		self.board.digital_write(self.controlPins[0], 1)
 		self.board.sleep(0.1)
 		self.board.digital_write(self.controlPins[0], 0)
 		self.board.sleep(0.1)
 
-	def turnOff(self):
+	def turnOn(self):
+		self.LOGGER.debug("turning on AC")
 		self.board.digital_write(self.controlPins[1], 1)
 		self.board.sleep(0.1)
 		self.board.digital_write(self.controlPins[1], 0)
@@ -362,8 +409,10 @@ class Vent:
 		self.controlPins = controlPins
 		self._state = "OFF"
 
-		for pin is self.controlPins:
+		for pin in self.controlPins:
 			self.board.set_pin_mode(pin, Constants.OUTPUT)
+
+		self.LOGGER.debug("Created Vent object")
 
 	@property
 	def state(self):
@@ -374,17 +423,17 @@ class Vent:
 		if onOff.upper() == "ON":
 			self._state = onOff
 			self.turnOn()
-		 if onOff.upper() == "OFF":
+		if onOff.upper() == "OFF":
 			 self._state = onOff
-			 self.turnOff
+			 self.turnOff()
 
-	def turnOn(self):
+	def turnOff(self):
 		self.board.digital_write(self.controlPins[0], 1)
 		self.board.sleep(0.1)
 		self.board.digital_write(self.controlPins[0], 0)
 		self.board.sleep(0.1)
 
-	def turnOff(self):
+	def turnOn(self):
 		self.board.digital_write(self.controlPins[1], 1)
 		self.board.sleep(0.1)
 		self.board.digital_write(self.controlPins[1], 0)
@@ -418,12 +467,17 @@ class HVAC:
 		self.vent = None
 		self.thermostat = None
 
+		self.LOGGER.debug("Created HVAC object")
+
 	def changeHeatState(self, state):
+		self.LOGGER.info("Heat state changed to {}".format(state))
 		self.heater.state = state
 
 	def changeACState(self, state):
+		self.LOGGER.info("AC state changed to {}".format(state))
 		self.ac.state = state
 
 	def changeVentState(self, state):
+		self.LOGGER.info("Vent state changed to {}".format(state))
 		self.vent.state = state
 

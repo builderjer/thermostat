@@ -3,7 +3,7 @@
 	"USER_DIR"						: ".config/thermostat",
 	"USER_CONFIG"				: "thermostat.json",
 	"MQTT"						: {
-		"PATH"						: "ziggy/temperature",
+		"PATH"						: "ziggy/thermostat",
 		"HOST"						: "ziggyserver.brodiehome",
 		"PORT"						: "8884",
 		"USER"						: "ziggy",
@@ -58,9 +58,10 @@
 			"VENT_ON"				: 7
 		}
 	},
-	"PRESENCE"					: {
+	"OCCUPANCY"					: {
 		"JEREMY"					: "192.168.0.101",
 		"MELISSA"					: "192.168.0.143",
+		"MELISSAIPAD"				: "192.168.0.237",
 		"ANTHONY"					: "192.168.0.217"
 		}
 }
