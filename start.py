@@ -109,8 +109,23 @@ except ValueError as e:
 	LOGGER.error("The main config file {} has an error.  Check and retry.  {}".format(str(CONFIG_FILE), e))
 	sys.exit()
 
+# Command Line config - Only if the option exists and is in valid json format
+if args.config and Path(args.config).exists():
+	try:
+		with open(Path(args.config), "r") as config:
+			clineConfig = json.load(config)
+		for setting, value in clineConfig.items():
+			SETTINGS[setting] = value
+		LOGGER.debug("Command Line config file loaded from {}\n{}".format(args.config, SETTINGS))
+	except ValueError:
+		LOGGER.warning("{} is not a valid json file.  Falling back to default".format(args.config))
+else:
+	LOGGER.warning("Could not load {}.  Check path and formatting".format(args.config))
+
 # User config - Location stored in Default Config file
 defaultUserConfig = Path(Path.home(), SETTINGS["USER_DIR"], SETTINGS["USER_CONFIG"])
+print(defaultUserConfig)
+print(defaultUserConfig.exists())
 if defaultUserConfig.exists():
 	try:
 		with open(defaultUserConfig, "r") as uConfig:
@@ -130,19 +145,6 @@ else:
 		LOGGER.debug("No user config found.  Creating default at {}".format(defaultUserConfig))
 	except Exception as e:
 		LOGGER.warning("Could not create default user config file.  {}".format(e))
-
-# Command Line config - Only if the option exists and is in valid json format
-if args.config and Path(args.config).exists():
-	try:
-		with open(Path(args.config), "r") as config:
-			clineConfig = json.load(config)
-		for setting, value in clineConfig.items():
-			SETTINGS[setting] = value
-		LOGGER.debug("Command Line config file loaded from {}\n{}".format(args.config, SETTINGS))
-	except ValueError:
-		LOGGER.warning("{} is not a valid json file.  Falling back to default".format(args.config))
-else:
-	LOGGER.warning("Could not load {}.  Check path and formatting".format(args.config))
 
 # Check for required version of config file
 if SETTINGS["MIN_VERSION"] >= __version__:
@@ -188,9 +190,11 @@ if SETTINGS["MQTT"]:
 	HVAC.thermostat.mqtt = SETTINGS["MQTT"]
 
 # Set up the presence detector
+OCCUPIED = sensors.PresenceDetector()
 if SETTINGS["OCCUPANCY"]:
-	OCCUPIED = sensors.PresenceDetector()
 	OCCUPIED.addresses = SETTINGS["OCCUPANCY"]
+else:
+	OCCUPIED.addresses = []
 
 # Set up the signal handler for Ctrl-C shutdown
 def shutdown(sig, frame):
