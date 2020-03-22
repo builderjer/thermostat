@@ -257,19 +257,22 @@ class Thermostat:
 
 	def publish(self):
 		if MQTT_ENABLED and self.mqtt:
-			# Publish each sensor temp first
-			for sensor in self.tempSensors:
-				temp = round(self.getTemp(sensor.name), 1)
-				topic = "/".join((self.mqtt["PATH"], sensor.name.lower()))
-				mqtt_pub.single(topic, payload=temp, qos=1, retain=True, hostname=self.mqtt["HOST"], port=int(self.mqtt["PORT"]), auth={"username": self.mqtt["USER"], "password": self.mqtt["PASSWORD"]})
-			# Now publish the groups
-			for area in self.groups:
-				temp = round(self.getTemp(area), 1)
-				topic = "/".join((self.mqtt["PATH"], area.lower()))
-				mqtt_pub.single(topic, payload=temp, qos=1, retain=True, hostname=self.mqtt["HOST"], port=int(self.mqtt["PORT"]), auth={"username": self.mqtt["USER"], "password": self.mqtt["PASSWORD"]})
-			# Publish misc stuff
-			topic = "/".join((self.mqtt["PATH"], "desired"))
-			mqtt_pub.single(topic, payload=self.desiredTemp, qos=1, retain=True, hostname=self.mqtt["HOST"], port=int(self.mqtt["PORT"]), auth={"username": self.mqtt["USER"], "password": self.mqtt["PASSWORD"]})
+			try:
+				# Publish each sensor temp first
+				for sensor in self.tempSensors:
+					temp = round(self.getTemp(sensor.name), 1)
+					topic = "/".join((self.mqtt["PATH"], sensor.name.lower()))
+					mqtt_pub.single(topic, payload=temp, qos=1, retain=True, hostname=self.mqtt["HOST"], port=int(self.mqtt["PORT"]), auth={"username": self.mqtt["USER"], "password": self.mqtt["PASSWORD"]})
+				# Now publish the groups
+				for area in self.groups:
+					temp = round(self.getTemp(area), 1)
+					topic = "/".join((self.mqtt["PATH"], area.lower()))
+					mqtt_pub.single(topic, payload=temp, qos=1, retain=True, hostname=self.mqtt["HOST"], port=int(self.mqtt["PORT"]), auth={"username": self.mqtt["USER"], "password": self.mqtt["PASSWORD"]})
+				# Publish misc stuff
+				topic = "/".join((self.mqtt["PATH"], "desired"))
+				mqtt_pub.single(topic, payload=self.desiredTemp, qos=1, retain=True, hostname=self.mqtt["HOST"], port=int(self.mqtt["PORT"]), auth={"username": self.mqtt["USER"], "password": self.mqtt["PASSWORD"]})
+			except:
+				self.LOGGER.warning("Could not connect to MQTT.  Skipping publish")
 		else:
 			self.LOGGER.warning("MQTT is either not enabled, or not setup correct")
 

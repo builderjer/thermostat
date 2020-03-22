@@ -3,11 +3,11 @@
 	"USER_DIR"						: ".config/thermostat",
 	"USER_CONFIG"				: "thermostat.json",
 	"MQTT"						: {
-		"PATH"						: "ziggy/thermostat",
-		"HOST"						: "ziggyserver.brodiehome",
-		"PORT"						: "8884",
-		"USER"						: "ziggy",
-		"PASSWORD"					: "ziggy"
+		"PATH"						: "",
+		"HOST"						: "",
+		"PORT"						: "",
+		"USER"						: "",
+		"PASSWORD"					: ""
 			},
 	"OUTPUT_FORMAT"			: "F",
 	"DEFAULT_STATE"			: "OFF",
@@ -30,7 +30,7 @@
 				"TIME_FOUR"		: ["2030", "0600", 0]
 				},
 			"OCCUPIED_SETTINGS"	: {
-				"HOME"				: ["0", "0", 1],
+				"HOME"				: ["0", "0", 0],
 				"AWAY"				: ["0", "0", -3]
 				}
 			},
@@ -43,7 +43,7 @@
 				"TIME_FOUR"		: ["2030", "0600", 0]
 				},
 			"NAMED_SETTINGS"	: {
-				"HOME"				: ["0", "0", -2],
+				"HOME"				: ["0", "0", 0],
 				"AWAY"				: ["0", "0", 3]
 				}
 			}

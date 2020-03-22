@@ -124,8 +124,7 @@ else:
 
 # User config - Location stored in Default Config file
 defaultUserConfig = Path(Path.home(), SETTINGS["USER_DIR"], SETTINGS["USER_CONFIG"])
-print(defaultUserConfig)
-print(defaultUserConfig.exists())
+
 if defaultUserConfig.exists():
 	try:
 		with open(defaultUserConfig, "r") as uConfig:
