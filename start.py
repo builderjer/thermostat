@@ -195,56 +195,59 @@ if SETTINGS["OCCUPANCY"]:
 else:
 	OCCUPIED.addresses = []
 
+def stop():
+	HVAC.board.shutdown()
+
 # Set up the signal handler for Ctrl-C shutdown
 def shutdown(sig, frame):
 	if HVAC.board:
-		HVAC.board.shutdown()
+		stop()
 	sys.exit()
 signal.signal(signal.SIGTERM, shutdown)
 signal.signal(signal.SIGINT, shutdown)
 
 # Make sure everything is turned off before starting main loop
-
 def turnAllOff():
 	HVAC.changeHeatState("OFF")
 	HVAC.changeACState("OFF")
 	#HVAC.changeVentState("OFF")
 
-def stop():
-	HVAC.board.shutdown()
 
 def start():
 	OCCUPIED.homeList = OCCUPIED.addresses
 	HVAC.thermostat.occupied = OCCUPIED.homeList
 	HVAC.thermostat.updateSensors()
-	#for sensor in HVAC.thermostat.tempSensors:
-		#HVAC.thermostat.getTemp(sensor.name)
-	#for group in HVAC.thermostat.groups:
-		#HVAC.thermostat.getTemp(group)
-	#HVAC.thermostat.getTemp("HALLWAY")
-	#HVAC.thermostat.getTemp("MASTERBED")
-	#HVAC.thermostat.getTemp("LIVINGROOM")
-	#HVAC.thermostat.getTemp("HOUSE")
 	HVAC.thermostat.desiredTemp = None
+	# Use a round temperature to keep within +- 1 deg
 	roundTemp = round(HVAC.thermostat.getTemp("HOUSE"))
 	LOGGER.debug("Round temp of house {}  Desired temp of house {}".format(roundTemp, HVAC.thermostat.desiredTemp))
+
 	if roundTemp < HVAC.thermostat.desiredTemp:
 		LOGGER.debug("round less than desired")
+
+		# Winter time, turn on the heat
 		if HVAC.thermostat.timeOfYear == "WINTER":
 			LOGGER.debug("WINTER turn heat on")
-			# To be implemented soon
-			#HVAC.changeVentState("ON")
-			#time.sleep(5)
 			HVAC.changeHeatState("ON")
-		elif HVAC.thermostat.timeOfYear == "SUMMER":
-			LOGGER.debug("SUMMER turn AC on")
 			# To be implemented soon
-			#HVAC.changeVentState("ON")
+			# Let the burner heat up for 5 seconds before turning on the blower
 			#time.sleep(5)
-			HVAC.changeACState("ON")
+			#HVAC.changeVentState("ON")
+
+		# Summer time, turn off the AC
+		elif HVAC.thermostat.timeOfYear == "SUMMER":
+			LOGGER.debug("SUMMER turn AC off")
+			HVAC.changeACState("OFF")
+			# To be implemented soon
+			# Keep the blower on for 5 seconds after turning off AC
+			#time.sleep(5)
+			#HVAC.changeVentState("OFF")
+
+		# Its not summer or winter, so make sure everything is turned off
 		else:
 			turnAllOff()
-	if round(HVAC.thermostat.getTemp("HOUSE")) > HVAC.thermostat.desiredTemp:
+
+	if roundTemp > HVAC.thermostat.desiredTemp:
 		LOGGER.debug("round greater than desired")
 		if HVAC.thermostat.timeOfYear == "WINTER":
 			LOGGER.debug("WINTER turn heat off")
@@ -253,15 +256,18 @@ def start():
 			#time.sleep(5)
 			#HVAC.changeVentState("OFF")
 		elif HVAC.thermostat.timeOfYear == "SUMMER":
-			LOGGER.debug("SUMMER turn AC off")
-			HVAC.changeACState("OFF")
+			LOGGER.debug("SUMMER turn AC on")
+			HVAC.changeACState("ON")
 			# To be implemented soon
 			#time.sleep(5)
 			#HVAC.changeVentState("OFF")
 		else:
 			turnAllOff()
 
+	# Publish the temperatures to the MQTT broker
 	HVAC.thermostat.publish()
+
+	# Give the board a rest
 	HVAC.thermostat.board.sleep(1)
 	LOGGER.debug("End of start loop")
 
