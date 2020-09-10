@@ -4,7 +4,7 @@ https://github.com/builderjer/ZiggyAI
 """
 
 __author__ = "builderjer"
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 import logging
 import subprocess
@@ -51,7 +51,11 @@ class TempSensor(Sensor):
 		if type(controlPin) == int:
 			self._controlPin = controlPin
 		else:
-			self._controlPin = None
+			try:
+				self._controlPin = int(controlPin)
+			except ValueError as e:
+				self.LOGGER.error("Sensor {} was setup with an invalid controlPin.\n	{} must be an intiger".format(self.name, controlPin))
+				self._controlPin = None
 
 		self._tempC = None
 		self._tempF = None
@@ -89,10 +93,12 @@ class TempSensor(Sensor):
 	# Most sensors use Centigrade, but this converts it to Fahernheit
 	@property
 	def tempF(self):
-		if self.tempC:
-			return (self.tempC * 1.8) + 32
-		else:
-			return None
+		if self.moduleType == "LM35":
+			# LM35 uses centigrade as its base temp.  Use that for the conversion
+			if self.tempC:
+				return (self.tempC * 1.8) + 32
+			else:
+				return None
 
 class PresenceDetector:
 	"""
@@ -137,4 +143,3 @@ class PresenceDetector:
 	#"""
 	#def __init__(self, controlPin):
 		#self.controlPin = controlPin
-

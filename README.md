@@ -9,9 +9,9 @@ Idea of building a smart thermostat with a raspberry pi or arduino.  Either way,
 
 ## Basic Concept
 Use a raspberry pi or an arduino or a combination of several to provide a "Smart Thermostat" for my home.
-I would like use a tablet as a visual interface that shows a self hosted webpage.
-This way, I can do modifications from a centeral computer, (my laptop), and access the thermostat from afar.
-I also want the settings, even simple temp adjustment, to require administrative privilages.  (I have kids!!)
+I would like use a tablet as a visual interface that shows a self hosted web page.
+This way, I can do modifications from a central computer, (my laptop), and access the thermostat from afar.
+I also want the settings, even simple temp adjustment, to require administrative privileges.  (I have kids!!)
 
 ### Why Not Buy One
 First reason would be that I have a hard time spending money on things that I don't actually control.
