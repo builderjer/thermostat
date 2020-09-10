@@ -7,8 +7,8 @@ and a vent.  All of these need a thermostat to control all of these.
 Each one of these elements have thier own class, and should be created as a
 property of a HVAC object.
 
-These classes are designed to be run with an Arduino running PyMata found at
-https://github.com/MrYsLab/pymata-aio.  The main script can be run from any
+These classes are designed to be run with an Arduino running PyMata4 found at
+https://github.com/MrYsLab/pymata4.  The main script can be run from any
 machine that can interface with the said Arduino.
 """
 
@@ -19,14 +19,13 @@ import copy
 
 LOGGER = logging.getLogger("__main__.hvac.py")
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 # HVAC is controlled by an Arduino board with PyMata installed
 try:
-	from pymata_aio.pymata3 import PyMata3
-	from pymata_aio.constants import Constants
+	from pymata4 import pymata4
 except ModuleNotFoundError as e:
-	LOGGER.error("PyMata3 is required for use.  https://github.com/MrYsLab/pymata-aio")
+	LOGGER.error("PyMata4 is required for use.  https://github.com/MrYsLab/pymata4")
 	#sys.exit()
 
 # MQTT is optional but recommended
@@ -483,4 +482,3 @@ class HVAC:
 	def changeVentState(self, state):
 		self.LOGGER.info("Vent state changed to {}".format(state))
 		self.vent.state = state
-
